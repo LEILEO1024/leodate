@@ -17,27 +17,30 @@
       <div v-show="activeStep === 0">
         <div class="card-header">
           账号运营情况
-          <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addOrganicPlatform()">+ 添加平台</button>
+          <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addOrganicPlatform()">+ 添加账号平台</button>
         </div>
 
         <div v-if="store.organicPlatforms.length === 0" style="color:var(--color-text-secondary);padding:12px 0">
-          暂无账号，点击"添加平台"开始录入
+          暂无平台，点击"添加账号平台"开始录入
         </div>
 
-        <div v-for="(plat, pi) in store.organicPlatforms" :key="pi" style="margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <input v-model="plat.accounts[0].platform_name" @input="store.markDirty()" placeholder="输入平台名称" style="flex:1;max-width:260px;padding:6px 10px;border:1px solid var(--color-border);border-radius:6px;font-size:14px;font-weight:600" />
-            <button class="btn btn-outline btn-sm" @click="addAccountToPlatform(plat.name || '')">+ 添加账号</button>
-            <button class="btn btn-danger btn-sm" @click="removePlatform(pi, 'organic')">删除平台</button>
+        <div v-for="g in store.organicGroups" :key="g.id" style="margin-bottom:16px;border:1px solid var(--color-border);border-radius:8px;padding:12px">
+          <div style="margin-bottom:10px">
+            <input v-model="g.name" @change="store.syncOrganicName(g.id, g.name)" placeholder="输入平台名称" style="width:100%;padding:8px 12px;border:1px solid var(--color-border);border-radius:6px;font-size:15px;font-weight:600" />
           </div>
-          <table class="data-table">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:13px;color:var(--color-text-secondary)">账号列表</span>
+            <button class="btn btn-outline btn-sm" @click="store.addOrganicAccount(g.id, g.name)">+ 添加账号</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:auto" @click="store.removeOrganicPlatform(g.id)">删除平台</button>
+          </div>
+          <table class="data-table" v-if="g.accounts.length > 0">
             <thead><tr><th>账号名</th><th>更新数</th><th>自然流线索数</th><th>操作</th></tr></thead>
             <tbody>
-              <tr v-for="(acc, ai) in plat.accounts" :key="ai">
-                <td><input v-model="acc.account_name" @input="syncPlatformName(pi, ai, 'organic')" placeholder="账号名" /></td>
+              <tr v-for="(acc, ai) in g.accounts" :key="ai">
+                <td><input v-model="acc.account_name" @input="store.markDirty()" placeholder="账号名" /></td>
                 <td><input type="number" min="0" v-model.number="acc.content_updated" @input="store.markDirty()" /></td>
                 <td><input type="number" min="0" v-model.number="acc.organic_leads" @input="store.markDirty()" /></td>
-                <td><button class="btn btn-danger btn-sm" @click="removeAccount(pi, ai, 'organic')">删除</button></td>
+                <td><button class="btn btn-danger btn-sm" @click="store.removeOrganicAccount(store.data.organic_accounts.indexOf(acc))">删除</button></td>
               </tr>
             </tbody>
           </table>
@@ -52,24 +55,27 @@
         </div>
 
         <div v-if="store.adPlatforms.length === 0" style="color:var(--color-text-secondary);padding:12px 0">
-          暂无投流数据，点击"添加投流平台"开始录入
+          暂无投流平台，点击"添加投流平台"开始录入
         </div>
 
-        <div v-for="(plat, pi) in store.adPlatforms" :key="pi" style="margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <input v-model="plat.accounts[0].platform_name" @input="store.markDirty()" placeholder="输入平台名称" style="flex:1;max-width:260px;padding:6px 10px;border:1px solid var(--color-border);border-radius:6px;font-size:14px;font-weight:600" />
-            <button class="btn btn-outline btn-sm" @click="addAccountToPlatform(plat.name || '')">+ 添加账号</button>
-            <button class="btn btn-danger btn-sm" @click="removePlatform(pi, 'ad')">删除平台</button>
+        <div v-for="g in store.adGroups" :key="g.id" style="margin-bottom:16px;border:1px solid var(--color-border);border-radius:8px;padding:12px">
+          <div style="margin-bottom:10px">
+            <input v-model="g.name" @change="store.syncAdName(g.id, g.name)" placeholder="输入平台名称" style="width:100%;padding:8px 12px;border:1px solid var(--color-border);border-radius:6px;font-size:15px;font-weight:600" />
           </div>
-          <table class="data-table">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:13px;color:var(--color-text-secondary)">账号列表</span>
+            <button class="btn btn-outline btn-sm" @click="store.addAdAccount(g.id, g.name)">+ 添加账号</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:auto" @click="store.removeAdPlatform(g.id)">删除平台</button>
+          </div>
+          <table class="data-table" v-if="g.accounts.length > 0">
             <thead><tr><th>投流账号名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>操作</th></tr></thead>
             <tbody>
-              <tr v-for="(acc, ai) in plat.accounts" :key="ai">
-                <td><input v-model="acc.account_name" @input="syncPlatformName(pi, ai, 'ad')" placeholder="投流账号名" /></td>
+              <tr v-for="(acc, ai) in g.accounts" :key="ai">
+                <td><input v-model="acc.account_name" @input="store.markDirty()" placeholder="投流账号名" /></td>
                 <td><input type="number" min="0" step="0.01" v-model.number="acc.ad_spend" @input="store.markDirty()" /></td>
                 <td><input type="number" min="0" v-model.number="acc.lead_count" @input="store.markDirty()" /></td>
                 <td><input class="form-input" :value="acc.lead_count > 0 && acc.ad_spend > 0 ? (acc.ad_spend / acc.lead_count).toFixed(2) : ''" disabled style="background:#f1f5f9" placeholder="自动" /></td>
-                <td><button class="btn btn-danger btn-sm" @click="removeAccount(pi, ai, 'ad')">删除</button></td>
+                <td><button class="btn btn-danger btn-sm" @click="store.removeAdAccount(store.data.ad_accounts.indexOf(acc))">删除</button></td>
               </tr>
             </tbody>
           </table>
@@ -102,8 +108,8 @@
 
       <!-- ============ Step 4: 订单情况 ============ -->
       <div v-show="activeStep === 3">
-        <div class="card-header">订单情况</div>
-        <div class="grid-3">
+        <div class="card-header">订单汇总</div>
+        <div class="grid-3" style="margin-bottom:20px">
           <div class="form-group">
             <label class="form-label">订单数量</label>
             <input class="form-input" type="number" min="0" v-model.number="store.data.total_orders" @input="store.markDirty()" />
@@ -121,6 +127,36 @@
             <input class="form-input" :value="((store.data.online_revenue || 0) + (store.data.offline_revenue || 0)).toLocaleString()" disabled style="background:#f1f5f9" />
           </div>
         </div>
+
+        <div class="card-header">
+          订单明细
+          <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addOrderEntry()">+ 添加订单</button>
+        </div>
+        <div v-if="store.data.order_entries.length > 0" style="overflow-x:auto">
+          <table class="data-table" style="min-width:1200px">
+            <thead><tr>
+              <th>#</th><th>订单创建时间</th><th>订单内容</th><th>订单状态</th><th>订单创建人</th>
+              <th>成交次数</th><th>产品名称</th><th>客户信息</th><th>联系方式</th><th>客户来源</th><th>订单金额</th><th>操作</th>
+            </tr></thead>
+            <tbody>
+              <tr v-for="(o, i) in store.data.order_entries" :key="i">
+                <td style="color:var(--color-text-secondary);width:30px">{{ i + 1 }}</td>
+                <td><input v-model="o.order_time" @input="store.markDirty()" style="width:120px" placeholder="2026-04-01" /></td>
+                <td><input v-model="o.order_content" @input="store.markDirty()" style="width:100px" /></td>
+                <td><input v-model="o.order_status" @input="store.markDirty()" style="width:60px" /></td>
+                <td><input v-model="o.order_creator" @input="store.markDirty()" style="width:60px" /></td>
+                <td><input v-model="o.deal_count" @input="store.markDirty()" style="width:60px" /></td>
+                <td><input v-model="o.product_name" @input="store.markDirty()" style="width:80px" /></td>
+                <td><input v-model="o.customer_info" @input="store.markDirty()" style="width:80px" /></td>
+                <td><input v-model="o.contact_info" @input="store.markDirty()" style="width:80px" /></td>
+                <td><input v-model="o.customer_source" @input="store.markDirty()" style="width:60px" /></td>
+                <td><input type="number" min="0" step="0.01" v-model.number="o.order_amount" @input="store.markDirty()" style="width:80px" /></td>
+                <td><button class="btn btn-danger btn-sm" @click="store.removeOrderEntry(i)">删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else style="color:var(--color-text-secondary);padding:12px 0">暂无订单数据，点击"添加订单"开始录入</div>
       </div>
 
       <!-- Navigation -->
@@ -152,92 +188,6 @@ const steps = [
   { key: 'other', label: '其他渠道情况' },
   { key: 'order', label: '订单情况' }
 ]
-
-// Add a new account to an existing platform
-function addAccountToPlatform(platformName: string) {
-  // Find which platform group and add a new account with the same platform_name
-  if (activeStep.value === 0) {
-    store.data.organic_accounts.push({ platform_name: platformName, account_name: '', content_updated: 0, organic_leads: 0 })
-    store.markDirty()
-  } else if (activeStep.value === 1) {
-    store.data.ad_accounts.push({ platform_name: platformName, account_name: '', ad_spend: 0, lead_count: 0, lead_cost: 0 })
-    store.markDirty()
-  }
-}
-
-// Sync platform_name across all accounts in the same group
-function syncPlatformName(pi: number, ai: number, type: 'organic' | 'ad') {
-  if (activeStep.value === 0) {
-    const plat = store.organicPlatforms[pi]
-    if (plat && ai === 0) {
-      for (let i = 1; i < plat.accounts.length; i++) {
-        plat.accounts[i].platform_name = plat.accounts[0].platform_name
-      }
-    }
-  } else {
-    const plat = store.adPlatforms[pi]
-    if (plat && ai === 0) {
-      for (let i = 1; i < plat.accounts.length; i++) {
-        plat.accounts[i].platform_name = plat.accounts[0].platform_name
-      }
-    }
-  }
-  store.markDirty()
-}
-
-function removePlatform(pi: number, type: 'organic' | 'ad') {
-  if (type === 'organic') {
-    const plat = store.organicPlatforms[pi]
-    if (plat) {
-      const indices: number[] = []
-      store.data.organic_accounts.forEach((a, i) => {
-        if (a.platform_name === plat.name || (a.platform_name === '' && plat.accounts.some(pa => pa === a))) {
-          indices.push(i)
-        }
-      })
-      indices.reverse().forEach(i => store.data.organic_accounts.splice(i, 1))
-    }
-  } else {
-    const plat = store.adPlatforms[pi]
-    if (plat) {
-      const indices: number[] = []
-      store.data.ad_accounts.forEach((a, i) => {
-        if (a.platform_name === plat.name || (a.platform_name === '' && plat.accounts.some(pa => pa === a))) {
-          indices.push(i)
-        }
-      })
-      indices.reverse().forEach(i => store.data.ad_accounts.splice(i, 1))
-    }
-  }
-  store.markDirty()
-}
-
-function removeAccount(pi: number, ai: number, type: 'organic' | 'ad') {
-  if (type === 'organic') {
-    const plat = store.organicPlatforms[pi]
-    if (plat && plat.accounts.length <= 1) {
-      removePlatform(pi, 'organic')
-      return
-    }
-    const acc = plat?.accounts[ai]
-    if (acc) {
-      const idx = store.data.organic_accounts.indexOf(acc)
-      if (idx >= 0) store.data.organic_accounts.splice(idx, 1)
-    }
-  } else {
-    const plat = store.adPlatforms[pi]
-    if (plat && plat.accounts.length <= 1) {
-      removePlatform(pi, 'ad')
-      return
-    }
-    const acc = plat?.accounts[ai]
-    if (acc) {
-      const idx = store.data.ad_accounts.indexOf(acc)
-      if (idx >= 0) store.data.ad_accounts.splice(idx, 1)
-    }
-  }
-  store.markDirty()
-}
 
 function goToPreview() {
   const reg = (route.query.region as string) || store.data.region || ''

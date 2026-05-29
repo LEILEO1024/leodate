@@ -79,6 +79,8 @@ tr:nth-child(even) td{background:#f8fafc}
 <div class="kpi green"><div class="l">订单数量</div><div class="v">${(d.total_orders||0).toLocaleString()}</div></div>
 <div class="kpi orange"><div class="l">成交金额</div><div class="v" style="font-size:16px">线上 ${(d.online_revenue||0).toLocaleString()} 元<br>其他渠道 ${(d.offline_revenue||0).toLocaleString()} 元</div></div>
 <div class="kpi purple"><div class="l">总金额</div><div class="v">${rev.toLocaleString()} 元</div></div>
+</div>
+${(d.order_entries||[]).length ? `<table><tr><th>#</th><th>订单创建时间</th><th>订单内容</th><th>订单状态</th><th>订单创建人</th><th>成交次数</th><th>产品名称</th><th>客户信息</th><th>联系方式</th><th>客户来源</th><th>订单金额</th></tr>${d.order_entries.map((o:any,i:number)=>`<tr><td>${i+1}</td><td>${esc(o.order_time||'')}</td><td>${esc(o.order_content||'')}</td><td>${esc(o.order_status||'')}</td><td>${esc(o.order_creator||'')}</td><td>${esc(o.deal_count||'')}</td><td>${esc(o.product_name||'')}</td><td>${esc(o.customer_info||'')}</td><td>${esc(o.contact_info||'')}</td><td>${esc(o.customer_source||'')}</td><td>${(o.order_amount||0).toLocaleString()}</td></tr>`).join('')}</table>` : ''}
 </div></div>
 
 ${channels.length ? `<div class="section"><div class="st">二、线索渠道来源</div><table><tr><th>渠道</th><th>线索数</th><th>占比</th></tr>${channels.map((c: any) => `<tr><td>${esc(c.name)}</td><td>${c.value.toLocaleString()}</td><td>${chTotal>0?(c.value/chTotal*100).toFixed(1):'0'}%</td></tr>`).join('')}</table></div>` : ''}

@@ -41,13 +41,32 @@
       <!-- Order section -->
       <div class="card">
         <div class="card-header">订单情况</div>
-        <div class="grid-3">
+        <div class="grid-3" style="margin-bottom:16px">
           <div class="kpi-card kpi-green"><div class="kpi-label">订单数量</div><div class="kpi-value">{{ formatNumber(report.total_orders) }}</div></div>
           <div class="kpi-card kpi-orange">
             <div class="kpi-label">成交金额</div>
             <div class="kpi-value" style="font-size:20px">线上 {{ formatNumber(report.online_revenue) }} 元<br/>其他渠道 {{ formatNumber(report.offline_revenue) }} 元</div>
           </div>
           <div class="kpi-card kpi-purple"><div class="kpi-label">总金额</div><div class="kpi-value">{{ formatNumber(totalRevenue) }} 元</div></div>
+        </div>
+
+        <div v-if="report.order_entries?.length" style="overflow-x:auto">
+          <div class="card-header" style="font-size:15px">订单明细</div>
+          <table class="data-table" style="min-width:1200px">
+            <thead><tr>
+              <th>#</th><th>订单创建时间</th><th>订单内容</th><th>订单状态</th><th>订单创建人</th>
+              <th>成交次数</th><th>产品名称</th><th>客户信息</th><th>联系方式</th><th>客户来源</th><th>订单金额</th>
+            </tr></thead>
+            <tbody>
+              <tr v-for="(o, i) in report.order_entries" :key="i">
+                <td>{{ i + 1 }}</td>
+                <td>{{ o.order_time }}</td><td>{{ o.order_content }}</td><td>{{ o.order_status }}</td>
+                <td>{{ o.order_creator }}</td><td>{{ o.deal_count }}</td><td>{{ o.product_name }}</td>
+                <td>{{ o.customer_info }}</td><td>{{ o.contact_info }}</td><td>{{ o.customer_source }}</td>
+                <td>{{ formatNumber(o.order_amount) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -72,6 +72,24 @@ export async function initDatabase(): Promise<void> {
     )
   `)
 
+  // Step 4: Order entries
+  db.run(`
+    CREATE TABLE IF NOT EXISTS order_entries (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id       INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+      order_time      TEXT,
+      order_content   TEXT,
+      order_status    TEXT,
+      order_creator   TEXT,
+      deal_count      TEXT,
+      product_name    TEXT,
+      customer_info   TEXT,
+      contact_info    TEXT,
+      customer_source TEXT,
+      order_amount    REAL    NOT NULL DEFAULT 0
+    )
+  `)
+
   // Step 3: Other channels
   db.run(`
     CREATE TABLE IF NOT EXISTS other_channels (
@@ -99,6 +117,7 @@ export async function initDatabase(): Promise<void> {
   db.run('CREATE INDEX IF NOT EXISTS idx_organic_accounts_report ON organic_accounts(report_id)')
   db.run('CREATE INDEX IF NOT EXISTS idx_ad_accounts_report ON ad_accounts(report_id)')
   db.run('CREATE INDEX IF NOT EXISTS idx_other_channels_report ON other_channels(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_order_entries_report ON order_entries(report_id)')
 
   // Drop legacy tables
   db.run('DROP TABLE IF EXISTS deal_sources')

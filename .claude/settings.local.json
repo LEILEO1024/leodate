@@ -14,7 +14,8 @@
       "Bash(rm -rf dist dist-electron release)",
       "Bash(npx electron-builder *)",
       "Bash(start \"\" \"d:/Project/LeoDate/release/win-unpacked/月度线索数据统计.exe\")",
-      "PowerShell(Start-Process \"d:\\\\Project\\\\LeoDate\\\\release\\\\win-unpacked\\\\�¶���������ͳ��.exe\")"
+      "PowerShell(Start-Process \"d:\\\\Project\\\\LeoDate\\\\release\\\\win-unpacked\\\\�¶���������ͳ��.exe\")",
+      "Bash(rm -f __TRACKED_VAR__/LeoDate/data.db)"
     ]
   }
 }

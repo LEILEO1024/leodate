@@ -16,6 +16,7 @@ function buildReportData(reportRow: any): any {
     organic_accounts: queryAll('SELECT platform_name, account_name, content_updated, organic_leads FROM organic_accounts WHERE report_id=? ORDER BY platform_name, id', [reportId]),
     ad_accounts: queryAll('SELECT platform_name, account_name, ad_spend, lead_count, lead_cost FROM ad_accounts WHERE report_id=? ORDER BY platform_name, id', [reportId]),
     other_channels: queryAll('SELECT channel_name, ad_spend, lead_count, lead_cost, order_count, conversion_rate FROM other_channels WHERE report_id=? ORDER BY id', [reportId]),
+    order_entries: queryAll('SELECT order_time, order_content, order_status, order_creator, deal_count, product_name, customer_info, contact_info, customer_source, order_amount FROM order_entries WHERE report_id=? ORDER BY id', [reportId]),
     channel_leads: queryAll('SELECT channel_name, lead_count FROM channel_leads WHERE report_id=? ORDER BY lead_count DESC', [reportId])
   }
 }
@@ -24,6 +25,7 @@ function deleteChildRecords(reportId: number) {
   execute('DELETE FROM organic_accounts WHERE report_id=?', [reportId])
   execute('DELETE FROM ad_accounts WHERE report_id=?', [reportId])
   execute('DELETE FROM other_channels WHERE report_id=?', [reportId])
+  execute('DELETE FROM order_entries WHERE report_id=?', [reportId])
   execute('DELETE FROM channel_leads WHERE report_id=?', [reportId])
 }
 
@@ -64,6 +66,10 @@ export function registerIpcHandlers() {
       for (const c of (data.other_channels || []))
         execute('INSERT INTO other_channels (report_id,channel_name,ad_spend,lead_count,lead_cost,order_count,conversion_rate) VALUES (?,?,?,?,?,?,?)',
           [reportId, c.channel_name, c.ad_spend || 0, c.lead_count || 0, c.lead_cost || 0, c.order_count || 0, c.conversion_rate || 0])
+
+      for (const o of (data.order_entries || []))
+        execute('INSERT INTO order_entries (report_id,order_time,order_content,order_status,order_creator,deal_count,product_name,customer_info,contact_info,customer_source,order_amount) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          [reportId, o.order_time || '', o.order_content || '', o.order_status || '', o.order_creator || '', o.deal_count || '', o.product_name || '', o.customer_info || '', o.contact_info || '', o.customer_source || '', o.order_amount || 0])
 
       for (const c of (data.channel_leads || []))
         execute('INSERT INTO channel_leads (report_id,channel_name,lead_count) VALUES (?,?,?)',
