@@ -224,7 +224,6 @@ const sortedChannels = computed(() =>
 )
 
 function onChannelChange() {
-  store.sortChannels()
   store.markDirty()
 }
 
@@ -232,7 +231,11 @@ function goToStep(i: number) {
   if (i <= activeStep.value) activeStep.value = i
 }
 function prevStep() { if (activeStep.value > 0) activeStep.value-- }
-function nextStep() { activeStep.value++ }
+function nextStep() {
+  // 点击"下一步"时触发线索渠道自动排序
+  if (activeStep.value === 1) store.sortChannels()
+  activeStep.value++
+}
 
 function showToast(msg: string, type: 'success' | 'error' = 'success') {
   toast.value = msg

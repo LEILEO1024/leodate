@@ -7,7 +7,10 @@
       "Bash(npx vite *)",
       "Bash(timeout 10 npx electron .)",
       "Bash(echo \"Exit code: $?\")",
-      "Read(//d/Project/Data lexin/dist-electron/**)"
+      "Read(//d/Project/Data lexin/dist-electron/**)",
+      "Bash(npx vue-tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

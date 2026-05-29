@@ -91,6 +91,21 @@ export const useReportStore = defineStore('report', () => {
       clean.xiaohongshu_ad_accounts = (clean.xiaohongshu_ad_accounts || []).filter((a: any) => a.account_name?.trim())
       clean.other_sources = (clean.other_sources || []).filter((s: any) => s.source_name?.trim())
 
+      // Auto-calculate 抖音投流线索成本 = 消耗金额 ÷ 线索数
+      for (const ad of clean.douyin_ad_accounts) {
+        if (ad.lead_count > 0 && ad.ad_spend > 0) ad.lead_cost = Math.round((ad.ad_spend / ad.lead_count) * 100) / 100
+      }
+
+      // Auto-calculate 小红书投流线索成本 = 消耗金额 ÷ 线索数
+      for (const ad of clean.xiaohongshu_ad_accounts) {
+        if (ad.lead_count > 0 && ad.ad_spend > 0) ad.lead_cost = Math.round((ad.ad_spend / ad.lead_count) * 100) / 100
+      }
+
+      // Auto-calculate 其他来源成交率 = 成交数 ÷ 线索数 × 100
+      for (const os of clean.other_sources) {
+        if (os.lead_count > 0 && os.order_count > 0) os.conversion_rate = Math.round((os.order_count / os.lead_count) * 10000) / 100
+      }
+
       // Sync computed values
       clean.total_leads = computedTotalLeads.value
       clean.total_ad_spend = computedTotalAdSpend.value
