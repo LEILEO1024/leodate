@@ -4,7 +4,10 @@
       <h1 class="page-title" style="margin-bottom:0">{{ year }}年{{ month }}月 — 报告预览</h1>
       <div style="display:flex;gap:8px">
         <button class="btn btn-outline" @click="router.push(`/report/${year}/${month}?region=${encodeURIComponent(region)}`)">返回编辑</button>
-        <button class="btn btn-primary" @click="exportPdf" :disabled="exporting">
+        <button class="btn btn-primary" @click="handleSave" :disabled="saving">
+          {{ saving ? '保存中...' : '保存数据' }}
+        </button>
+        <button class="btn btn-outline" @click="exportPdf" :disabled="exporting">
           {{ exporting ? '正在生成...' : '导出 PDF' }}
         </button>
       </div>
@@ -32,7 +35,7 @@
         <div class="grid-3">
           <div class="kpi-card kpi-blue">
             <div class="kpi-label">新线索总计</div>
-            <div class="kpi-value">{{ formatNumber(report.total_leads) }}</div>
+            <div class="kpi-value">{{ formatNumber(displayTotalLeads) }}</div>
           </div>
           <div class="kpi-card kpi-green">
             <div class="kpi-label">总订单数</div>
@@ -45,22 +48,22 @@
           </div>
           <div class="kpi-card kpi-purple">
             <div class="kpi-label">总成交率</div>
-            <div class="kpi-value">{{ conversionRate }}%</div>
+            <div class="kpi-value">{{ displayConversionRate }}%</div>
           </div>
           <div class="kpi-card kpi-red">
             <div class="kpi-label">总投流消耗</div>
-            <div class="kpi-value">{{ formatNumber(report.total_ad_spend) }} 元</div>
+            <div class="kpi-value">{{ formatNumber(displayTotalAdSpend) }} 元</div>
           </div>
         </div>
       </div>
 
-      <!-- Module 2: Channel leads -->
-      <div class="card" v-if="report.channel_leads?.length">
+      <!-- Module 2: Channel leads (generated from store) -->
+      <div class="card" v-if="channelData.length > 0">
         <div class="card-header">二、线索渠道来源</div>
         <table class="data-table">
           <thead><tr><th>渠道</th><th>线索数</th><th>占比</th></tr></thead>
           <tbody>
-            <tr v-for="ch in report.channel_leads" :key="ch.channel_name">
+            <tr v-for="ch in channelData" :key="ch.channel_name">
               <td>{{ ch.channel_name }}</td>
               <td>{{ formatNumber(ch.lead_count) }}</td>
               <td>{{ getChannelPercent(ch.lead_count) }}%</td>
@@ -68,7 +71,7 @@
           </tbody>
         </table>
         <PieChart
-          :channelData="report.channel_leads.map(c => ({ name: c.channel_name, value: c.lead_count }))"
+          :channelData="channelData.map(c => ({ name: c.channel_name, value: c.lead_count }))"
           title="渠道占比"
         />
       </div>
@@ -100,7 +103,7 @@
                 <td>{{ ad.account_name }}</td>
                 <td>{{ formatNumber(ad.ad_spend) }}</td>
                 <td>{{ formatNumber(ad.lead_count) }}</td>
-                <td>{{ formatNumber(ad.lead_cost) }}</td>
+                <td>{{ calcLeadCost(ad.ad_spend, ad.lead_count) }}</td>
               </tr>
             </tbody>
           </table>
@@ -134,7 +137,7 @@
                 <td>{{ ad.account_name }}</td>
                 <td>{{ formatNumber(ad.ad_spend) }}</td>
                 <td>{{ formatNumber(ad.lead_count) }}</td>
-                <td>{{ formatNumber(ad.lead_cost) }}</td>
+                <td>{{ calcLeadCost(ad.ad_spend, ad.lead_count) }}</td>
               </tr>
             </tbody>
           </table>
@@ -151,9 +154,9 @@
               <td>{{ s.source_name }}</td>
               <td>{{ formatNumber(s.ad_spend) }}</td>
               <td>{{ formatNumber(s.lead_count) }}</td>
-              <td>{{ formatNumber(s.lead_cost) }}</td>
+              <td>{{ calcLeadCost(s.ad_spend, s.lead_count) }}</td>
               <td>{{ formatNumber(s.order_count) }}</td>
-              <td>{{ s.conversion_rate ?? 0 }}%</td>
+              <td>{{ s.lead_count > 0 && s.order_count > 0 ? ((s.order_count / s.lead_count) * 100).toFixed(2) : '0' }}%</td>
             </tr>
           </tbody>
         </table>
@@ -169,6 +172,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ipcService } from '@/services/ipcService'
+import { useReportStore } from '@/stores/reportStore'
 import { formatNumber } from '@/utils/format'
 import type { ReportData, ReportSummary } from '@/types'
 import PieChart from '@/components/charts/PieChart.vue'
@@ -177,28 +181,68 @@ import TrendChart from '@/components/charts/TrendChart.vue'
 const props = defineProps<{ year: number; month: number }>()
 const route = useRoute()
 const router = useRouter()
+const store = useReportStore()
 const report = ref<ReportData | null>(null)
 const allReports = ref<ReportSummary[]>([])
 const loading = ref(true)
 const exporting = ref(false)
+const saving = ref(false)
 const region = computed(() => (route.query.region as string) || '')
 
+// 优先使用 store 实时数据，否则用数据库中的历史数据
+const channelData = computed(() => {
+  const generated = store.generatedChannelLeads
+  if (generated.length > 0) return generated
+  return report.value?.channel_leads || []
+})
+
 const today = new Date().toLocaleDateString('zh-CN')
+
+// 使用 store 实时计算值（处理新建报告未保存的场景）
+const displayTotalLeads = computed(() => {
+  const storeVal = store.computedTotalLeads
+  if (storeVal > 0) return storeVal
+  return report.value?.total_leads || 0
+})
+
+const displayTotalAdSpend = computed(() => {
+  const storeVal = store.computedTotalAdSpend
+  if (storeVal > 0) return storeVal
+  return report.value?.total_ad_spend || 0
+})
+
+const displayConversionRate = computed(() => {
+  const leads = displayTotalLeads.value
+  if (!leads) return '0.0'
+  const orders = report.value?.total_orders || 0
+  return ((orders / leads) * 100).toFixed(1)
+})
 
 const totalRevenue = computed(() =>
   (report.value?.online_revenue || 0) + (report.value?.offline_revenue || 0)
 )
 
-const conversionRate = computed(() => {
-  if (!report.value?.total_leads) return '0.0'
-  return ((report.value.total_orders / report.value.total_leads) * 100).toFixed(1)
-})
+// 实时计算线索成本
+function calcLeadCost(adSpend: number, leadCount: number): string {
+  if (leadCount > 0 && adSpend > 0) return (adSpend / leadCount).toFixed(2)
+  return '0'
+}
 
 function getChannelPercent(count: number): string {
-  if (!report.value) return '0.0'
-  const total = report.value.channel_leads.reduce((s, c) => s + (c.lead_count || 0), 0)
+  const total = channelData.value.reduce((s, c) => s + (c.lead_count || 0), 0)
   if (!total) return '0.0'
   return ((count / total) * 100).toFixed(1)
+}
+
+async function handleSave() {
+  saving.value = true
+  const result = await store.save()
+  saving.value = false
+  if (result.success) {
+    alert('保存成功')
+  } else {
+    alert('保存失败: ' + result.error)
+  }
 }
 
 async function exportPdf() {
@@ -213,14 +257,28 @@ async function exportPdf() {
 }
 
 onMounted(async () => {
-  const [result, reports] = await Promise.all([
-    ipcService.getReport(region.value, props.year, props.month),
-    ipcService.getAllReportsForChart()
-  ])
-  if (result && !(result as any).error) {
-    report.value = result
+  // 优先使用 store 中的数据（编辑页填好后跳转过来）
+  if (store.data.region && store.data.year === props.year && store.data.month === props.month) {
+    report.value = JSON.parse(JSON.stringify(store.data))
   }
-  allReports.value = reports || []
+  // 否则从数据库加载
+  if (!report.value) {
+    const result = await ipcService.getReport(region.value, props.year, props.month)
+    if (result && !(result as any).error) {
+      report.value = result
+    }
+  }
+  allReports.value = (await ipcService.getAllReportsForChart()) || []
   loading.value = false
 })
 </script>
+
+<style scoped>
+.card-header { font-size: 18px; }
+.data-table th { font-size: 14px; padding: 10px 14px; }
+.data-table td { font-size: 14px; padding: 10px 14px; }
+.kpi-label { font-size: 14px; }
+.kpi-value { font-size: 28px; }
+.kpi-sub { font-size: 13px; }
+h4 { font-size: 16px !important; }
+</style>

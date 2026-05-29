@@ -43,7 +43,9 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .app-header .logo {
   font-size: 15px; font-weight: 700; color: var(--color-primary);
   margin-right: 32px; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
 }
+.logo-icon { width: 22px; height: 22px; object-fit: contain; }
 .app-header nav { display: flex; gap: 4px; }
 .app-header nav a {
   display: inline-flex; align-items: center; padding: 6px 14px;

@@ -16,7 +16,7 @@ win:
   target:
     - target: nsis
       arch: [x64]
-  icon: resources/icon.ico
+  icon: resources/icon.png
   signAndEditExecutable: false
 
 nsis:
@@ -30,7 +30,7 @@ nsis:
 
 mac:
   target: [dmg]
-  icon: resources/icon.icns
+  icon: resources/icon.png
 
 linux:
   target: [AppImage, deb]

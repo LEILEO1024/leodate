@@ -1,6 +1,6 @@
 <template>
   <header class="app-header">
-    <div class="logo">月度线索数据统计</div>
+    <div class="logo"><img src="@/assets/icon.png" class="logo-icon" />月度线索数据统计</div>
     <nav>
       <router-link to="/">首页</router-link>
       <router-link to="/history">历史数据</router-link>

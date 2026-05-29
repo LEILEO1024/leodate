@@ -14,7 +14,10 @@ export default defineConfig({
           build: {
             outDir: 'dist-electron',
             rollupOptions: {
-              external: ['sql.js']
+              external: ['sql.js'],
+              output: {
+                intro: 'if(typeof process!="undefined"&&process.env&&process.env.ELECTRON_RUN_AS_NODE){delete process.env.ELECTRON_RUN_AS_NODE}'
+              }
             }
           }
         }

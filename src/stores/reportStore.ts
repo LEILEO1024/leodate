@@ -23,26 +23,59 @@ function emptyReport(region: string, year: number, month: number): ReportData {
   }
 }
 
+function buildChannelLeads(data: any) {
+  const map = new Map<string, number>()
+
+  // 抖音：自然流 + 投流合并
+  for (const a of data.douyin_accounts || []) {
+    if (a.organic_leads > 0) {
+      map.set('抖音', (map.get('抖音') || 0) + (a.organic_leads || 0))
+    }
+  }
+  for (const a of data.douyin_ad_accounts || []) {
+    if (a.lead_count > 0) {
+      map.set('抖音', (map.get('抖音') || 0) + (a.lead_count || 0))
+    }
+  }
+
+  // 小红书：自然流 + 投流合并
+  for (const a of data.xiaohongshu_accounts || []) {
+    if (a.organic_leads > 0) {
+      map.set('小红书', (map.get('小红书') || 0) + (a.organic_leads || 0))
+    }
+  }
+  for (const a of data.xiaohongshu_ad_accounts || []) {
+    if (a.lead_count > 0) {
+      map.set('小红书', (map.get('小红书') || 0) + (a.lead_count || 0))
+    }
+  }
+
+  // 其他来源：各自独立
+  for (const s of data.other_sources || []) {
+    if (s.lead_count > 0) {
+      const name = s.source_name
+      map.set(name, (map.get(name) || 0) + (s.lead_count || 0))
+    }
+  }
+
+  const result = Array.from(map.entries())
+    .map(([channel_name, lead_count]) => ({ channel_name, lead_count }))
+    .sort((a, b) => b.lead_count - a.lead_count)
+
+  return result
+}
+
 export const useReportStore = defineStore('report', () => {
   const data = ref<ReportData>(emptyReport('', new Date().getFullYear(), new Date().getMonth() + 1))
   const isLoaded = ref(false)
   const isDirty = ref(false)
 
-  // ---- Auto-computed totals across all 5 modules ----
+  // ---- Auto-computed totals across all modules ----
+
+  const generatedChannelLeads = computed(() => buildChannelLeads(data.value))
 
   const computedTotalLeads = computed(() => {
-    let total = 0
-    // Module 2: channel leads
-    total += data.value.channel_leads.reduce((s, c) => s + (c.lead_count || 0), 0)
-    // Module 3: douyin organic + ad
-    total += data.value.douyin_accounts.reduce((s, a) => s + (a.organic_leads || 0), 0)
-    total += data.value.douyin_ad_accounts.reduce((s, a) => s + (a.lead_count || 0), 0)
-    // Module 4: xiaohongshu organic + ad
-    total += data.value.xiaohongshu_accounts.reduce((s, a) => s + (a.organic_leads || 0), 0)
-    total += data.value.xiaohongshu_ad_accounts.reduce((s, a) => s + (a.lead_count || 0), 0)
-    // Module 5: other sources
-    total += data.value.other_sources.reduce((s, o) => s + (o.lead_count || 0), 0)
-    return total
+    return generatedChannelLeads.value.reduce((s, c) => s + (c.lead_count || 0), 0)
   })
 
   const computedTotalAdSpend = computed(() => {
@@ -82,9 +115,9 @@ export const useReportStore = defineStore('report', () => {
     try {
       const clean = JSON.parse(JSON.stringify(data.value))
 
-      // Filter empty-name entries & sort channels
-      clean.channel_leads = (clean.channel_leads || []).filter((c: any) => c.channel_name?.trim())
-      clean.channel_leads.sort((a: any, b: any) => (b.lead_count || 0) - (a.lead_count || 0))
+      // Auto-generate channel_leads from steps 2-4
+      clean.channel_leads = generatedChannelLeads.value
+      // Filter empty-name entries & sort other module data
       clean.douyin_accounts = (clean.douyin_accounts || []).filter((a: any) => a.account_name?.trim())
       clean.douyin_ad_accounts = (clean.douyin_ad_accounts || []).filter((a: any) => a.account_name?.trim())
       clean.xiaohongshu_accounts = (clean.xiaohongshu_accounts || []).filter((a: any) => a.account_name?.trim())
@@ -198,7 +231,7 @@ export const useReportStore = defineStore('report', () => {
 
   return {
     data, isLoaded, isDirty,
-    computedTotalLeads, computedTotalAdSpend, computedConversionRate,
+    computedTotalLeads, computedTotalAdSpend, computedConversionRate, generatedChannelLeads,
     initNew, load, save, markDirty,
     addChannelLead, removeChannelLead, sortChannels,
     addDouyinAccount, removeDouyinAccount,
