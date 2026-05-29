@@ -44,9 +44,24 @@ export const useReportStore = defineStore('report', () => {
     total += data.value.other_channels.reduce((s, c) => s + (c.ad_spend || 0), 0)
     return total
   })
+  const computedTotalRevenue = computed(() => computedOnlineRevenue.value + computedOfflineRevenue.value)
+
   const computedConversionRate = computed(() => {
-    if (!data.value.total_leads) return 0
-    return Math.round((data.value.total_orders / data.value.total_leads) * 10000) / 100
+    if (!computedTotalLeads.value) return 0
+    return Math.round((computedTotalOrders.value / computedTotalLeads.value) * 10000) / 100
+  })
+
+  // Step 4 auto-calculations from order entries
+  const computedTotalOrders = computed(() => data.value.order_entries.length)
+  const computedOnlineRevenue = computed(() => {
+    return data.value.order_entries
+      .filter(o => o.customer_source !== '微信' && o.customer_source !== '转介绍')
+      .reduce((s, o) => s + (o.order_amount || 0), 0)
+  })
+  const computedOfflineRevenue = computed(() => {
+    return data.value.order_entries
+      .filter(o => o.customer_source === '微信' || o.customer_source === '转介绍')
+      .reduce((s, o) => s + (o.order_amount || 0), 0)
   })
 
   // Platform management
@@ -109,6 +124,11 @@ export const useReportStore = defineStore('report', () => {
       }
 
       clean.channel_leads = generatedChannelLeads.value
+      clean.total_leads = computedTotalLeads.value
+      clean.total_ad_spend = computedTotalAdSpend.value
+      clean.total_orders = computedTotalOrders.value
+      clean.online_revenue = computedOnlineRevenue.value
+      clean.offline_revenue = computedOfflineRevenue.value
       clean.total_leads = computedTotalLeads.value
       clean.total_ad_spend = computedTotalAdSpend.value
 
@@ -184,6 +204,7 @@ export const useReportStore = defineStore('report', () => {
   return {
     data, isLoaded, isDirty,
     computedTotalLeads, computedTotalAdSpend, computedConversionRate,
+    computedTotalOrders, computedOnlineRevenue, computedOfflineRevenue, computedTotalRevenue,
     generatedChannelLeads, organicPlatforms, adPlatforms, organicGroups, adGroups,
     initNew, load, save, markDirty,
     addOrganicPlatform, addOrganicAccount, syncOrganicName, removeOrganicPlatform, removeOrganicAccount,

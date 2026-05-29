@@ -21,5 +21,7 @@ contextBridge.exposeInMainWorld('api', {
 
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
-  closeWindow: () => ipcRenderer.send('window:close')
+  closeWindow: () => ipcRenderer.send('window:close'),
+
+  openExcelFile: () => ipcRenderer.invoke('dialog:openExcel')
 })

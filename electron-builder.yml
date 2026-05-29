@@ -10,7 +10,8 @@ files:
   - dist/**/*
   - dist-electron/**/*
 
-asar: true
+asar:
+  smartUnpack: true
 
 win:
   target:

@@ -17,5 +17,6 @@ interface Window {
     minimizeWindow: () => void
     maximizeWindow: () => void
     closeWindow: () => void
+    openExcelFile: () => Promise<{ success: boolean; entries?: any[]; error?: string }>
   }
 }

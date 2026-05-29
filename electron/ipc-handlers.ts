@@ -101,6 +101,42 @@ export function registerIpcHandlers() {
     catch { return [] }
   })
 
+  ipcMain.handle('dialog:openExcel', async () => {
+    try {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: '选择订单Excel文件',
+        filters: [{ name: 'Excel文件', extensions: ['xlsx', 'xls'] }],
+        properties: ['openFile']
+      })
+      if (canceled || !filePaths.length) return { success: false, error: '已取消' }
+
+      const XLSX = require('xlsx')
+      const wb = XLSX.readFile(filePaths[0])
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 })
+
+      // Skip header rows (first 2 rows: title + column headers)
+      const entries: any[] = []
+      for (let i = 2; i < rows.length; i++) {
+        const r = rows[i]
+        if (!r || r.length < 11) continue
+        entries.push({
+          order_time: String(r[1] ?? ''),
+          order_content: String(r[2] ?? ''),
+          order_status: String(r[3] ?? ''),
+          order_creator: String(r[4] ?? ''),
+          deal_count: String(r[5] ?? ''),
+          product_name: String(r[6] ?? ''),
+          customer_info: String(r[7] ?? ''),
+          contact_info: String(r[8] ?? ''),
+          customer_source: String(r[9] ?? ''),
+          order_amount: Number(r[10]) || 0
+        })
+      }
+      return { success: true, entries }
+    } catch (e: any) { return { success: false, error: e.message } }
+  })
+
   ipcMain.handle('pdf:generate', async (_e, region: string, year: number, month: number) => {
     try {
       const r: any = queryOne('SELECT * FROM reports WHERE region=? AND year=? AND month=?', [region, year, month])

@@ -23,5 +23,9 @@ export const ipcService = {
 
   async generatePdf(region: string, year: number, month: number): Promise<{ success: boolean; filePath?: string; error?: string }> {
     return window.api.generatePdf(region, year, month)
+  },
+
+  async openExcelFile(): Promise<{ success: boolean; entries?: any[]; error?: string }> {
+    return window.api.openExcelFile()
   }
 }

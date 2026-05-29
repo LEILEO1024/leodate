@@ -5,7 +5,7 @@
     <div class="steps">
       <div v-for="(s, i) in steps" :key="s.key"
         class="step" :class="{ active: activeStep === i, done: i < activeStep }"
-        @click="activeStep = i">
+        @click="goToStep(i)">
         <span class="step-num">{{ i + 1 }}</span>
         <span class="step-label">{{ s.label }}</span>
       </div>
@@ -108,29 +108,32 @@
 
       <!-- ============ Step 4: 订单情况 ============ -->
       <div v-show="activeStep === 3">
-        <div class="card-header">订单汇总</div>
+        <div class="card-header">订单汇总（自动统计）</div>
         <div class="grid-3" style="margin-bottom:20px">
           <div class="form-group">
             <label class="form-label">订单数量</label>
-            <input class="form-input" type="number" min="0" v-model.number="store.data.total_orders" @input="store.markDirty()" />
+            <input class="form-input" :value="store.computedTotalOrders.toLocaleString()" disabled style="background:#f1f5f9" />
           </div>
           <div class="form-group">
             <label class="form-label">线上成交金额（元）</label>
-            <input class="form-input" type="number" min="0" step="0.01" v-model.number="store.data.online_revenue" @input="store.markDirty()" />
+            <input class="form-input" :value="store.computedOnlineRevenue.toLocaleString()" disabled style="background:#f1f5f9" />
+            <span style="font-size:11px;color:var(--color-text-secondary)">客户来源 ≠ 微信/转介绍</span>
           </div>
           <div class="form-group">
             <label class="form-label">其他渠道成交金额（元）</label>
-            <input class="form-input" type="number" min="0" step="0.01" v-model.number="store.data.offline_revenue" @input="store.markDirty()" />
+            <input class="form-input" :value="store.computedOfflineRevenue.toLocaleString()" disabled style="background:#f1f5f9" />
+            <span style="font-size:11px;color:var(--color-text-secondary)">客户来源 = 微信/转介绍</span>
           </div>
           <div class="form-group">
             <label class="form-label">总金额（自动计算）</label>
-            <input class="form-input" :value="((store.data.online_revenue || 0) + (store.data.offline_revenue || 0)).toLocaleString()" disabled style="background:#f1f5f9" />
+            <input class="form-input" :value="(store.computedOnlineRevenue + store.computedOfflineRevenue).toLocaleString()" disabled style="background:#f1f5f9" />
           </div>
         </div>
 
         <div class="card-header">
           订单明细
           <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addOrderEntry()">+ 添加订单</button>
+          <button class="btn btn-outline btn-sm" style="margin-left:8px" @click="uploadExcel" :disabled="uploading">{{ uploading ? '读取中...' : '上传订单文件' }}</button>
         </div>
         <div v-if="store.data.order_entries.length > 0" style="overflow-x:auto">
           <table class="data-table" style="min-width:1200px">
@@ -163,7 +166,7 @@
       <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border)">
         <button v-if="activeStep > 0" class="btn btn-outline" @click="activeStep--">上一步</button>
         <span v-else></span>
-        <button v-if="activeStep < 3" class="btn btn-primary" @click="activeStep++">下一步</button>
+        <button v-if="activeStep < 3" class="btn btn-primary" @click="nextStep">下一步</button>
         <button v-else class="btn btn-success" @click="goToPreview">预览报告</button>
       </div>
     </div>
@@ -174,12 +177,37 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useReportStore } from '@/stores/reportStore'
+import { ipcService } from '@/services/ipcService'
 
 const route = useRoute()
 const router = useRouter()
 const store = useReportStore()
+const uploading = ref(false)
 
 const props = defineProps<{ year: number; month: number }>()
+
+function sortCurrentStep() {
+  if (activeStep.value === 0) {
+    // 步骤1：按更新数排序
+    store.data.organic_accounts.sort((a, b) => (b.content_updated || 0) - (a.content_updated || 0))
+  } else if (activeStep.value === 1) {
+    // 步骤2：按消耗金额排序
+    store.data.ad_accounts.sort((a, b) => (b.ad_spend || 0) - (a.ad_spend || 0))
+  } else if (activeStep.value === 2) {
+    // 步骤3：按线索数排序
+    store.data.other_channels.sort((a, b) => (b.lead_count || 0) - (a.lead_count || 0))
+  }
+}
+
+function goToStep(i: number) {
+  sortCurrentStep()
+  activeStep.value = i
+}
+
+function nextStep() {
+  sortCurrentStep()
+  activeStep.value++
+}
 
 const activeStep = ref(0)
 const steps = [
@@ -188,6 +216,31 @@ const steps = [
   { key: 'other', label: '其他渠道情况' },
   { key: 'order', label: '订单情况' }
 ]
+
+async function uploadExcel() {
+  uploading.value = true
+  const result = await ipcService.openExcelFile()
+  uploading.value = false
+  if (result.success && result.entries) {
+    for (const e of result.entries) {
+      store.data.order_entries.push({
+        order_time: e.order_time || '',
+        order_content: e.order_content || '',
+        order_status: e.order_status || '',
+        order_creator: e.order_creator || '',
+        deal_count: e.deal_count || '',
+        product_name: e.product_name || '',
+        customer_info: e.customer_info || '',
+        contact_info: e.contact_info || '',
+        customer_source: e.customer_source || '',
+        order_amount: e.order_amount || 0
+      })
+    }
+    store.markDirty()
+  } else if (result.error !== '已取消') {
+    alert('读取失败: ' + result.error)
+  }
+}
 
 function goToPreview() {
   const reg = (route.query.region as string) || store.data.region || ''

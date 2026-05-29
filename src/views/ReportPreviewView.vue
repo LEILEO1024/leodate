@@ -33,40 +33,14 @@
         <div class="card-header">一、核心指标</div>
         <div class="grid-3">
           <div class="kpi-card kpi-blue"><div class="kpi-label">新线索总计</div><div class="kpi-value">{{ formatNumber(displayTotalLeads) }}</div></div>
-          <div class="kpi-card kpi-purple"><div class="kpi-label">总成交率</div><div class="kpi-value">{{ displayConversionRate }}%</div></div>
-          <div class="kpi-card kpi-red"><div class="kpi-label">总投流消耗</div><div class="kpi-value">{{ formatNumber(displayTotalAdSpend) }} 元</div></div>
-        </div>
-      </div>
-
-      <!-- Order section -->
-      <div class="card">
-        <div class="card-header">订单情况</div>
-        <div class="grid-3" style="margin-bottom:16px">
-          <div class="kpi-card kpi-green"><div class="kpi-label">订单数量</div><div class="kpi-value">{{ formatNumber(report.total_orders) }}</div></div>
+          <div class="kpi-card kpi-green"><div class="kpi-label">订单数量</div><div class="kpi-value">{{ formatNumber(displayTotalOrders) }}</div></div>
           <div class="kpi-card kpi-orange">
             <div class="kpi-label">成交金额</div>
-            <div class="kpi-value" style="font-size:20px">线上 {{ formatNumber(report.online_revenue) }} 元<br/>其他渠道 {{ formatNumber(report.offline_revenue) }} 元</div>
+            <div class="kpi-value" style="font-size:20px">线上 {{ formatNumber(displayOnlineRevenue) }} 元<br/>其他渠道 {{ formatNumber(displayOfflineRevenue) }} 元</div>
           </div>
-          <div class="kpi-card kpi-purple"><div class="kpi-label">总金额</div><div class="kpi-value">{{ formatNumber(totalRevenue) }} 元</div></div>
-        </div>
-
-        <div v-if="report.order_entries?.length" style="overflow-x:auto">
-          <div class="card-header" style="font-size:15px">订单明细</div>
-          <table class="data-table" style="min-width:1200px">
-            <thead><tr>
-              <th>#</th><th>订单创建时间</th><th>订单内容</th><th>订单状态</th><th>订单创建人</th>
-              <th>成交次数</th><th>产品名称</th><th>客户信息</th><th>联系方式</th><th>客户来源</th><th>订单金额</th>
-            </tr></thead>
-            <tbody>
-              <tr v-for="(o, i) in report.order_entries" :key="i">
-                <td>{{ i + 1 }}</td>
-                <td>{{ o.order_time }}</td><td>{{ o.order_content }}</td><td>{{ o.order_status }}</td>
-                <td>{{ o.order_creator }}</td><td>{{ o.deal_count }}</td><td>{{ o.product_name }}</td>
-                <td>{{ o.customer_info }}</td><td>{{ o.contact_info }}</td><td>{{ o.customer_source }}</td>
-                <td>{{ formatNumber(o.order_amount) }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="kpi-card kpi-purple"><div class="kpi-label">总成交率</div><div class="kpi-value">{{ displayConversionRate }}%</div></div>
+          <div class="kpi-card kpi-red"><div class="kpi-label">总投流消耗</div><div class="kpi-value">{{ formatNumber(displayTotalAdSpend) }} 元</div></div>
+          <div class="kpi-card kpi-teal"><div class="kpi-label">总金额</div><div class="kpi-value">{{ formatNumber(displayTotalRevenue) }} 元</div></div>
         </div>
       </div>
 
@@ -141,6 +115,25 @@
       </div>
 
       <TrendChart :reports="allReports" title="历史趋势" v-if="allReports.length > 1" />
+
+      <div class="card" v-if="report.order_entries?.length" style="overflow-x:auto">
+        <div class="card-header" style="font-size:15px">六、订单明细</div>
+        <table class="data-table" style="min-width:1200px">
+          <thead><tr>
+            <th>#</th><th>订单创建时间</th><th>订单内容</th><th>订单状态</th><th>订单创建人</th>
+            <th>成交次数</th><th>产品名称</th><th>客户信息</th><th>联系方式</th><th>客户来源</th><th>订单金额</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="(o, i) in report.order_entries" :key="i">
+              <td>{{ i + 1 }}</td>
+              <td>{{ o.order_time }}</td><td>{{ o.order_content }}</td><td>{{ o.order_status }}</td>
+              <td>{{ o.order_creator }}</td><td>{{ o.deal_count }}</td><td>{{ o.product_name }}</td>
+              <td>{{ o.customer_info }}</td><td>{{ o.contact_info }}</td><td>{{ o.customer_source }}</td>
+              <td>{{ formatNumber(o.order_amount) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -186,12 +179,15 @@ function groupBy(list: any[], key: string) {
 
 const displayTotalLeads = computed(() => store.computedTotalLeads || report.value?.total_leads || 0)
 const displayTotalAdSpend = computed(() => store.computedTotalAdSpend || report.value?.total_ad_spend || 0)
+const displayTotalOrders = computed(() => store.computedTotalOrders || report.value?.total_orders || 0)
+const displayOnlineRevenue = computed(() => store.computedOnlineRevenue || report.value?.online_revenue || 0)
+const displayOfflineRevenue = computed(() => store.computedOfflineRevenue || report.value?.offline_revenue || 0)
+const displayTotalRevenue = computed(() => store.computedTotalRevenue || (report.value?.online_revenue || 0) + (report.value?.offline_revenue || 0))
 const displayConversionRate = computed(() => {
   const l = displayTotalLeads.value
   if (!l) return '0.0'
-  return ((report.value?.total_orders || 0) / l * 100).toFixed(1)
+  return ((displayTotalOrders.value / l) * 100).toFixed(1)
 })
-const totalRevenue = computed(() => (report.value?.online_revenue || 0) + (report.value?.offline_revenue || 0))
 
 function calcCost(spend: number, leads: number) {
   return leads > 0 && spend > 0 ? (spend / leads).toFixed(2) : '0'
