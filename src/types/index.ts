@@ -86,6 +86,7 @@ export interface XiaohongshuAdAccount {
 
 export interface OtherSource {
   source_name: string
+  ad_spend: number
   lead_count: number
   lead_cost: number
   order_count: number

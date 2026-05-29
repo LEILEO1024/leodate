@@ -49,7 +49,7 @@ export const useReportStore = defineStore('report', () => {
     let total = 0
     total += data.value.douyin_ad_accounts.reduce((s, a) => s + (a.ad_spend || 0), 0)
     total += data.value.xiaohongshu_ad_accounts.reduce((s, a) => s + (a.ad_spend || 0), 0)
-    total += data.value.other_sources.reduce((s, o) => s + (o.lead_cost || 0), 0)
+    total += data.value.other_sources.reduce((s, o) => s + (o.ad_spend || 0), 0)
     return total
   })
 
@@ -101,8 +101,9 @@ export const useReportStore = defineStore('report', () => {
         if (ad.lead_count > 0 && ad.ad_spend > 0) ad.lead_cost = Math.round((ad.ad_spend / ad.lead_count) * 100) / 100
       }
 
-      // Auto-calculate 其他来源成交率 = 成交数 ÷ 线索数 × 100
+      // Auto-calculate 其他来源：线索成本 = 消耗金额 ÷ 线索数，成交率 = 成交数 ÷ 线索数 × 100
       for (const os of clean.other_sources) {
+        if (os.lead_count > 0 && os.ad_spend > 0) os.lead_cost = Math.round((os.ad_spend / os.lead_count) * 100) / 100
         if (os.lead_count > 0 && os.order_count > 0) os.conversion_rate = Math.round((os.order_count / os.lead_count) * 10000) / 100
       }
 
@@ -187,7 +188,7 @@ export const useReportStore = defineStore('report', () => {
 
   // ---- Module 5: Other sources ----
   function addOtherSource() {
-    data.value.other_sources.push({ source_name: '', lead_count: 0, lead_cost: 0, order_count: 0, conversion_rate: 0 })
+    data.value.other_sources.push({ source_name: '', ad_spend: 0, lead_count: 0, lead_cost: 0, order_count: 0, conversion_rate: 0 })
     markDirty()
   }
   function removeOtherSource(index: number) {

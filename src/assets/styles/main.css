@@ -28,7 +28,9 @@ body {
   user-select: none;
 }
 
-#app { height: 100vh; display: flex; flex-direction: column; }
+#app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+.page { flex: 1; overflow-y: auto; padding: 24px 32px; min-height: 0; }
 
 input, select, button { font-family: inherit; font-size: inherit; }
 
@@ -60,7 +62,6 @@ input, select, button { font-family: inherit; font-size: inherit; }
 .win-ctrl-close:hover { background: var(--color-danger); color: #fff; }
 
 /* ===== Layout ===== */
-.page { flex: 1; overflow-y: auto; padding: 24px 32px; }
 .page-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
 
 /* ===== Card ===== */

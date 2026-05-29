@@ -56,6 +56,7 @@ tr:nth-child(even) td{background:#f8fafc}
 .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .si{background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:6px 12px}
 .si .l{font-size:10px;color:#64748b}.si .v{font-size:14px;font-weight:bold;color:#0369a1}
+.pb{page-break-before:always}
 @media print{.section{page-break-inside:avoid}table{page-break-inside:avoid}tr{page-break-inside:avoid}}
 </style></head><body>
 <div class="cover"><h1>月度线索数据报告</h1><div class="sub">${d.year}年${d.month}月</div></div>
@@ -73,6 +74,7 @@ tr:nth-child(even) td{background:#f8fafc}
 </div>
 
 ${chanSection(d)}
+<div class="pb"></div>
 ${douyinSection(d)}
 ${xhsSection(d)}
 ${otherSection(d)}
@@ -129,7 +131,7 @@ function xhsSection(d: any): string {
 function otherSection(d: any): string {
   if (!d.other_sources?.length) return ''
   const rows = d.other_sources.map((s: any) =>
-    `<tr><td>${esc(s.source_name)}</td><td>${(s.lead_count||0).toLocaleString()}</td><td>${(s.lead_cost||0).toLocaleString()}</td><td>${s.order_count||0}</td><td>${s.conversion_rate||0}%</td></tr>`
+    `<tr><td>${esc(s.source_name)}</td><td>${(s.ad_spend||0).toLocaleString()}</td><td>${(s.lead_count||0).toLocaleString()}</td><td>${(s.lead_cost||0).toLocaleString()}</td><td>${s.order_count||0}</td><td>${s.conversion_rate||0}%</td></tr>`
   ).join('')
-  return `<div class="section"><div class="st">五、其他来源数据</div><table><tr><th>来源</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr>${rows}</table></div>`
+  return `<div class="section"><div class="st">五、其他来源数据</div><table><tr><th>来源</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr>${rows}</table></div>`
 }

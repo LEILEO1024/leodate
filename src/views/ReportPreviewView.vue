@@ -145,10 +145,11 @@
       <div class="card" v-if="report.other_sources?.length">
         <div class="card-header">五、其他来源数据</div>
         <table class="data-table">
-          <thead><tr><th>来源</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr></thead>
+          <thead><tr><th>来源</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr></thead>
           <tbody>
             <tr v-for="(s, i) in report.other_sources" :key="i">
               <td>{{ s.source_name }}</td>
+              <td>{{ formatNumber(s.ad_spend) }}</td>
               <td>{{ formatNumber(s.lead_count) }}</td>
               <td>{{ formatNumber(s.lead_cost) }}</td>
               <td>{{ formatNumber(s.order_count) }}</td>

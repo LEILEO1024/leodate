@@ -10,7 +10,11 @@
       "Read(//d/Project/Data lexin/dist-electron/**)",
       "Bash(npx vue-tsc *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(rm -rf dist dist-electron release)",
+      "Bash(npx electron-builder *)",
+      "Bash(start \"\" \"d:/Project/LeoDate/release/win-unpacked/月度线索数据统计.exe\")",
+      "PowerShell(Start-Process \"d:\\\\Project\\\\LeoDate\\\\release\\\\win-unpacked\\\\�¶���������ͳ��.exe\")"
     ]
   }
 }

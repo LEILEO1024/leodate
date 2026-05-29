@@ -59,13 +59,13 @@
           线索渠道来源
           <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addChannelLead()">+ 添加渠道</button>
         </div>
-        <table class="data-table" v-if="sortedChannels.length > 0">
+        <table class="data-table" v-if="store.data.channel_leads.length > 0">
           <thead><tr><th>#</th><th>渠道名称</th><th>线索数</th><th>操作</th></tr></thead>
           <tbody>
-            <tr v-for="(ch, i) in sortedChannels" :key="i">
+            <tr v-for="(ch, i) in store.data.channel_leads" :key="i">
               <td style="color:var(--color-text-secondary);width:30px">{{ i + 1 }}</td>
               <td><input v-model="ch.channel_name" @input="store.markDirty()" placeholder="输入渠道名称" /></td>
-              <td><input type="number" min="0" v-model.number="ch.lead_count" @input="onChannelChange()" /></td>
+              <td><input type="number" min="0" v-model.number="ch.lead_count" @input="store.markDirty()" /></td>
               <td><button class="btn btn-danger btn-sm" @click="store.removeChannelLead(i)">删除</button></td>
             </tr>
           </tbody>
@@ -105,7 +105,7 @@
               <td><input v-model="ad.account_name" @input="store.markDirty()" placeholder="投流账号名" /></td>
               <td><input type="number" min="0" step="0.01" v-model.number="ad.ad_spend" @input="store.markDirty()" /></td>
               <td><input type="number" min="0" v-model.number="ad.lead_count" @input="store.markDirty()" /></td>
-              <td><input type="number" min="0" step="0.01" v-model.number="ad.lead_cost" @input="store.markDirty()" /></td>
+              <td><input class="form-input" :value="ad.lead_count > 0 && ad.ad_spend > 0 ? (ad.ad_spend / ad.lead_count).toFixed(2) : ''" disabled style="background:#f1f5f9" placeholder="自动计算" /></td>
               <td><button class="btn btn-danger btn-sm" @click="store.removeDouyinAdAccount(i)">删除</button></td>
             </tr>
           </tbody>
@@ -145,7 +145,7 @@
               <td><input v-model="ad.account_name" @input="store.markDirty()" placeholder="投流账号名" /></td>
               <td><input type="number" min="0" step="0.01" v-model.number="ad.ad_spend" @input="store.markDirty()" /></td>
               <td><input type="number" min="0" v-model.number="ad.lead_count" @input="store.markDirty()" /></td>
-              <td><input type="number" min="0" step="0.01" v-model.number="ad.lead_cost" @input="store.markDirty()" /></td>
+              <td><input class="form-input" :value="ad.lead_count > 0 && ad.ad_spend > 0 ? (ad.ad_spend / ad.lead_count).toFixed(2) : ''" disabled style="background:#f1f5f9" placeholder="自动计算" /></td>
               <td><button class="btn btn-danger btn-sm" @click="store.removeXiaohongshuAdAccount(i)">删除</button></td>
             </tr>
           </tbody>
@@ -160,14 +160,15 @@
           <button class="btn btn-outline btn-sm" style="margin-left:12px" @click="store.addOtherSource()">+ 添加来源</button>
         </div>
         <table class="data-table" v-if="store.data.other_sources.length > 0">
-          <thead><tr><th>来源名称</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率（%）</th><th>操作</th></tr></thead>
+          <thead><tr><th>来源名称</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率（%）</th><th>操作</th></tr></thead>
           <tbody>
             <tr v-for="(s, i) in store.data.other_sources" :key="i">
               <td><input v-model="s.source_name" @input="store.markDirty()" placeholder="输入来源名称" /></td>
+              <td><input type="number" min="0" step="0.01" v-model.number="s.ad_spend" @input="store.markDirty()" /></td>
               <td><input type="number" min="0" v-model.number="s.lead_count" @input="store.markDirty()" /></td>
-              <td><input type="number" min="0" step="0.01" v-model.number="s.lead_cost" @input="store.markDirty()" /></td>
+              <td><input class="form-input" :value="s.lead_count > 0 && s.ad_spend > 0 ? (s.ad_spend / s.lead_count).toFixed(2) : ''" disabled style="background:#f1f5f9" placeholder="自动计算" /></td>
               <td><input type="number" min="0" v-model.number="s.order_count" @input="store.markDirty()" /></td>
-              <td><input type="number" min="0" max="100" step="0.1" v-model.number="s.conversion_rate" @input="store.markDirty()" /></td>
+              <td><input class="form-input" :value="s.lead_count > 0 && s.order_count > 0 ? ((s.order_count / s.lead_count) * 100).toFixed(2) : ''" disabled style="background:#f1f5f9" placeholder="自动计算" /></td>
               <td><button class="btn btn-danger btn-sm" @click="store.removeOtherSource(i)">删除</button></td>
             </tr>
           </tbody>
@@ -218,14 +219,6 @@ const steps = [
   { key: 'xhs', label: '小红书精细数据' },
   { key: 'other', label: '其他来源数据' }
 ]
-
-const sortedChannels = computed(() =>
-  [...store.data.channel_leads].sort((a, b) => (b.lead_count || 0) - (a.lead_count || 0))
-)
-
-function onChannelChange() {
-  store.markDirty()
-}
 
 function goToStep(i: number) {
   if (i <= activeStep.value) activeStep.value = i

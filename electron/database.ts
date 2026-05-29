@@ -114,6 +114,7 @@ export async function initDatabase(): Promise<void> {
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
       report_id       INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
       source_name     TEXT    NOT NULL,
+      ad_spend        REAL    NOT NULL DEFAULT 0,
       lead_count      INTEGER NOT NULL DEFAULT 0,
       lead_cost       REAL    NOT NULL DEFAULT 0,
       order_count     INTEGER NOT NULL DEFAULT 0,

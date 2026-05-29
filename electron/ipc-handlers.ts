@@ -41,7 +41,7 @@ function buildReportData(reportRow: any): any {
     ),
 
     other_sources: queryAll(
-      'SELECT source_name, lead_count, lead_cost, order_count, conversion_rate FROM other_sources WHERE report_id = ? ORDER BY id',
+      'SELECT source_name, ad_spend, lead_count, lead_cost, order_count, conversion_rate FROM other_sources WHERE report_id = ? ORDER BY id',
       [reportId]
     )
   }
@@ -130,8 +130,8 @@ export function registerIpcHandlers() {
 
       // Other sources
       for (const os of (data.other_sources || [])) {
-        execute('INSERT INTO other_sources (report_id, source_name, lead_count, lead_cost, order_count, conversion_rate) VALUES (?,?,?,?,?,?)',
-          [reportId, os.source_name, os.lead_count || 0, os.lead_cost || 0, os.order_count || 0, os.conversion_rate || 0])
+        execute('INSERT INTO other_sources (report_id, source_name, ad_spend, lead_count, lead_cost, order_count, conversion_rate) VALUES (?,?,?,?,?,?,?)',
+          [reportId, os.source_name, os.ad_spend || 0, os.lead_count || 0, os.lead_cost || 0, os.order_count || 0, os.conversion_rate || 0])
       }
 
       saveToDisk()
