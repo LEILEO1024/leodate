@@ -1,6 +1,6 @@
 {
   "name": "leodate",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "月度线索数据统计软件",
   "main": "dist-electron/main.js",
   "scripts": {

@@ -3,7 +3,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h1 class="page-title" style="margin-bottom:0">{{ year }}年{{ month }}月 — 报告预览</h1>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-outline" @click="router.push(`/report/${year}/${month}?region=${encodeURIComponent(region)}`)">返回编辑</button>
+        <button class="btn btn-outline" @click="router.push(`/report/${year}/${month}?region=${encodeURIComponent(region)}&step=${route.query.step || 2}`)">返回编辑</button>
         <button class="btn btn-primary" @click="handleSave" :disabled="saving">
           {{ saving ? '保存中...' : '保存数据' }}
         </button>
@@ -26,38 +26,32 @@
       <div class="card" style="text-align:center;padding:40px">
         <h1 style="font-size:26px">月度线索数据报告</h1>
         <div style="font-size:20px;color:var(--color-primary);font-weight:bold;margin-top:8px">{{ year }}年{{ month }}月</div>
-        <div style="font-size:12px;color:var(--color-text-secondary);margin-top:12px">生成日期: {{ today }}</div>
       </div>
 
-      <!-- Module 1: KPIs -->
+      <!-- KPIs -->
       <div class="card">
         <div class="card-header">一、核心指标</div>
         <div class="grid-3">
-          <div class="kpi-card kpi-blue">
-            <div class="kpi-label">新线索总计</div>
-            <div class="kpi-value">{{ formatNumber(displayTotalLeads) }}</div>
-          </div>
-          <div class="kpi-card kpi-green">
-            <div class="kpi-label">总订单数</div>
-            <div class="kpi-value">{{ formatNumber(report.total_orders) }}</div>
-          </div>
-          <div class="kpi-card kpi-orange">
-            <div class="kpi-label">总成交金额</div>
-            <div class="kpi-value">{{ formatNumber(totalRevenue) }} 元</div>
-            <div class="kpi-sub">线上 {{ formatNumber(report.online_revenue) }} / 其他渠道 {{ formatNumber(report.offline_revenue) }}</div>
-          </div>
-          <div class="kpi-card kpi-purple">
-            <div class="kpi-label">总成交率</div>
-            <div class="kpi-value">{{ displayConversionRate }}%</div>
-          </div>
-          <div class="kpi-card kpi-red">
-            <div class="kpi-label">总投流消耗</div>
-            <div class="kpi-value">{{ formatNumber(displayTotalAdSpend) }} 元</div>
-          </div>
+          <div class="kpi-card kpi-blue"><div class="kpi-label">新线索总计</div><div class="kpi-value">{{ formatNumber(displayTotalLeads) }}</div></div>
+          <div class="kpi-card kpi-purple"><div class="kpi-label">总成交率</div><div class="kpi-value">{{ displayConversionRate }}%</div></div>
+          <div class="kpi-card kpi-red"><div class="kpi-label">总投流消耗</div><div class="kpi-value">{{ formatNumber(displayTotalAdSpend) }} 元</div></div>
         </div>
       </div>
 
-      <!-- Module 2: Channel leads (generated from store) -->
+      <!-- Order section -->
+      <div class="card">
+        <div class="card-header">订单情况</div>
+        <div class="grid-3">
+          <div class="kpi-card kpi-green"><div class="kpi-label">订单数量</div><div class="kpi-value">{{ formatNumber(report.total_orders) }}</div></div>
+          <div class="kpi-card kpi-orange">
+            <div class="kpi-label">成交金额</div>
+            <div class="kpi-value" style="font-size:20px">线上 {{ formatNumber(report.online_revenue) }} 元<br/>其他渠道 {{ formatNumber(report.offline_revenue) }} 元</div>
+          </div>
+          <div class="kpi-card kpi-purple"><div class="kpi-label">总金额</div><div class="kpi-value">{{ formatNumber(totalRevenue) }} 元</div></div>
+        </div>
+      </div>
+
+      <!-- Channel leads -->
       <div class="card" v-if="channelData.length > 0">
         <div class="card-header">二、线索渠道来源</div>
         <table class="data-table">
@@ -66,103 +60,67 @@
             <tr v-for="ch in channelData" :key="ch.channel_name">
               <td>{{ ch.channel_name }}</td>
               <td>{{ formatNumber(ch.lead_count) }}</td>
-              <td>{{ getChannelPercent(ch.lead_count) }}%</td>
+              <td>{{ chPct(ch.lead_count) }}%</td>
             </tr>
           </tbody>
         </table>
-        <PieChart
-          :channelData="channelData.map(c => ({ name: c.channel_name, value: c.lead_count }))"
-          title="渠道占比"
-        />
       </div>
 
-      <!-- Module 3: Douyin -->
-      <div class="card" v-if="report.douyin_accounts?.length || report.douyin_ad_accounts?.length">
-        <div class="card-header">三、抖音精细数据</div>
-
-        <template v-if="report.douyin_accounts?.length">
-          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">各账号数据</h4>
+      <!-- Organic accounts -->
+      <div class="card" v-if="organicGroups.length > 0">
+        <div class="card-header">三、账号运营情况</div>
+        <div v-for="(g, gi) in organicGroups" :key="gi" style="margin-bottom:12px">
+          <h4 style="margin:8px 0 6px;font-size:15px;color:var(--color-text)">{{ g.name || '未命名平台' }}</h4>
           <table class="data-table">
-            <thead><tr><th>账号名</th><th>更新视频数</th><th>自然流线索数</th></tr></thead>
+            <thead><tr><th>账号名</th><th>更新数</th><th>自然流线索数</th></tr></thead>
             <tbody>
-              <tr v-for="(a, i) in report.douyin_accounts" :key="i">
+              <tr v-for="(a, ai) in g.accounts" :key="ai">
                 <td>{{ a.account_name }}</td>
-                <td>{{ a.videos_updated ?? 0 }}</td>
+                <td>{{ a.content_updated ?? 0 }}</td>
                 <td>{{ a.organic_leads ?? 0 }}</td>
               </tr>
             </tbody>
           </table>
-        </template>
+        </div>
+      </div>
 
-        <template v-if="report.douyin_ad_accounts?.length">
-          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">投流汇总</h4>
+      <!-- Ad accounts -->
+      <div class="card" v-if="adGroups.length > 0">
+        <div class="card-header">四、投流情况</div>
+        <div v-for="(g, gi) in adGroups" :key="gi" style="margin-bottom:12px">
+          <h4 style="margin:8px 0 6px;font-size:15px;color:var(--color-text)">{{ g.name || '未命名平台' }}</h4>
           <table class="data-table">
             <thead><tr><th>投流账号名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th></tr></thead>
             <tbody>
-              <tr v-for="(ad, i) in report.douyin_ad_accounts" :key="i">
-                <td>{{ ad.account_name }}</td>
-                <td>{{ formatNumber(ad.ad_spend) }}</td>
-                <td>{{ formatNumber(ad.lead_count) }}</td>
-                <td>{{ calcLeadCost(ad.ad_spend, ad.lead_count) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </template>
-      </div>
-
-      <!-- Module 4: Xiaohongshu -->
-      <div class="card" v-if="report.xiaohongshu_accounts?.length || report.xiaohongshu_ad_accounts?.length">
-        <div class="card-header">四、小红书精细数据</div>
-
-        <template v-if="report.xiaohongshu_accounts?.length">
-          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">各账号数据</h4>
-          <table class="data-table">
-            <thead><tr><th>账号名</th><th>更新图文数</th><th>自然流线索数</th></tr></thead>
-            <tbody>
-              <tr v-for="(a, i) in report.xiaohongshu_accounts" :key="i">
+              <tr v-for="(a, ai) in g.accounts" :key="ai">
                 <td>{{ a.account_name }}</td>
-                <td>{{ a.posts_updated ?? 0 }}</td>
-                <td>{{ a.organic_leads ?? 0 }}</td>
+                <td>{{ formatNumber(a.ad_spend) }}</td>
+                <td>{{ formatNumber(a.lead_count) }}</td>
+                <td>{{ calcCost(a.ad_spend, a.lead_count) }}</td>
               </tr>
             </tbody>
           </table>
-        </template>
-
-        <template v-if="report.xiaohongshu_ad_accounts?.length">
-          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">投流汇总</h4>
-          <table class="data-table">
-            <thead><tr><th>投流账号名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th></tr></thead>
-            <tbody>
-              <tr v-for="(ad, i) in report.xiaohongshu_ad_accounts" :key="i">
-                <td>{{ ad.account_name }}</td>
-                <td>{{ formatNumber(ad.ad_spend) }}</td>
-                <td>{{ formatNumber(ad.lead_count) }}</td>
-                <td>{{ calcLeadCost(ad.ad_spend, ad.lead_count) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </template>
+        </div>
       </div>
 
-      <!-- Module 5: Other sources -->
-      <div class="card" v-if="report.other_sources?.length">
-        <div class="card-header">五、其他来源数据</div>
+      <!-- Other channels -->
+      <div class="card" v-if="report.other_channels?.length">
+        <div class="card-header">五、其他渠道</div>
         <table class="data-table">
-          <thead><tr><th>来源</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr></thead>
+          <thead><tr><th>渠道名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr></thead>
           <tbody>
-            <tr v-for="(s, i) in report.other_sources" :key="i">
-              <td>{{ s.source_name }}</td>
-              <td>{{ formatNumber(s.ad_spend) }}</td>
-              <td>{{ formatNumber(s.lead_count) }}</td>
-              <td>{{ calcLeadCost(s.ad_spend, s.lead_count) }}</td>
-              <td>{{ formatNumber(s.order_count) }}</td>
-              <td>{{ s.lead_count > 0 && s.order_count > 0 ? ((s.order_count / s.lead_count) * 100).toFixed(2) : '0' }}%</td>
+            <tr v-for="(c, i) in report.other_channels" :key="i">
+              <td>{{ c.channel_name }}</td>
+              <td>{{ formatNumber(c.ad_spend) }}</td>
+              <td>{{ formatNumber(c.lead_count) }}</td>
+              <td>{{ calcCost(c.ad_spend, c.lead_count) }}</td>
+              <td>{{ formatNumber(c.order_count) }}</td>
+              <td>{{ c.lead_count > 0 && c.order_count > 0 ? ((c.order_count / c.lead_count) * 100).toFixed(2) : '0' }}%</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Trend chart -->
       <TrendChart :reports="allReports" title="历史趋势" v-if="allReports.length > 1" />
     </div>
   </div>
@@ -175,7 +133,6 @@ import { ipcService } from '@/services/ipcService'
 import { useReportStore } from '@/stores/reportStore'
 import { formatNumber } from '@/utils/format'
 import type { ReportData, ReportSummary } from '@/types'
-import PieChart from '@/components/charts/PieChart.vue'
 import TrendChart from '@/components/charts/TrendChart.vue'
 
 const props = defineProps<{ year: number; month: number }>()
@@ -189,84 +146,64 @@ const exporting = ref(false)
 const saving = ref(false)
 const region = computed(() => (route.query.region as string) || '')
 
-// 优先使用 store 实时数据，否则用数据库中的历史数据
 const channelData = computed(() => {
-  const generated = store.generatedChannelLeads
-  if (generated.length > 0) return generated
+  const g = store.generatedChannelLeads
+  if (g.length > 0) return g
   return report.value?.channel_leads || []
 })
 
-const today = new Date().toLocaleDateString('zh-CN')
+const organicGroups = computed(() => groupBy(report.value?.organic_accounts || [], 'platform_name'))
+const adGroups = computed(() => groupBy(report.value?.ad_accounts || [], 'platform_name'))
 
-// 使用 store 实时计算值（处理新建报告未保存的场景）
-const displayTotalLeads = computed(() => {
-  const storeVal = store.computedTotalLeads
-  if (storeVal > 0) return storeVal
-  return report.value?.total_leads || 0
-})
-
-const displayTotalAdSpend = computed(() => {
-  const storeVal = store.computedTotalAdSpend
-  if (storeVal > 0) return storeVal
-  return report.value?.total_ad_spend || 0
-})
-
-const displayConversionRate = computed(() => {
-  const leads = displayTotalLeads.value
-  if (!leads) return '0.0'
-  const orders = report.value?.total_orders || 0
-  return ((orders / leads) * 100).toFixed(1)
-})
-
-const totalRevenue = computed(() =>
-  (report.value?.online_revenue || 0) + (report.value?.offline_revenue || 0)
-)
-
-// 实时计算线索成本
-function calcLeadCost(adSpend: number, leadCount: number): string {
-  if (leadCount > 0 && adSpend > 0) return (adSpend / leadCount).toFixed(2)
-  return '0'
+function groupBy(list: any[], key: string) {
+  const map = new Map<string, any[]>()
+  for (const item of list) {
+    const k = item[key] || ''
+    if (!map.has(k)) map.set(k, [])
+    map.get(k)!.push(item)
+  }
+  return Array.from(map.entries()).map(([name, accounts]) => ({ name, accounts }))
 }
 
-function getChannelPercent(count: number): string {
-  const total = channelData.value.reduce((s, c) => s + (c.lead_count || 0), 0)
-  if (!total) return '0.0'
-  return ((count / total) * 100).toFixed(1)
+const displayTotalLeads = computed(() => store.computedTotalLeads || report.value?.total_leads || 0)
+const displayTotalAdSpend = computed(() => store.computedTotalAdSpend || report.value?.total_ad_spend || 0)
+const displayConversionRate = computed(() => {
+  const l = displayTotalLeads.value
+  if (!l) return '0.0'
+  return ((report.value?.total_orders || 0) / l * 100).toFixed(1)
+})
+const totalRevenue = computed(() => (report.value?.online_revenue || 0) + (report.value?.offline_revenue || 0))
+
+function calcCost(spend: number, leads: number) {
+  return leads > 0 && spend > 0 ? (spend / leads).toFixed(2) : '0'
+}
+function chPct(count: number) {
+  const t = channelData.value.reduce((s: number, c: any) => s + (c.lead_count || 0), 0)
+  return t ? ((count / t) * 100).toFixed(1) : '0.0'
 }
 
 async function handleSave() {
   saving.value = true
-  const result = await store.save()
+  const r = await store.save()
   saving.value = false
-  if (result.success) {
-    alert('保存成功')
-  } else {
-    alert('保存失败: ' + result.error)
-  }
+  alert(r.success ? '保存成功' : '保存失败: ' + r.error)
 }
 
 async function exportPdf() {
   exporting.value = true
-  const result = await ipcService.generatePdf(region.value, props.year, props.month)
+  const r = await ipcService.generatePdf(region.value, props.year, props.month)
   exporting.value = false
-  if (result.success) {
-    alert('PDF导出成功！')
-  } else if (result.error !== '已取消') {
-    alert('导出失败: ' + result.error)
-  }
+  if (r.success) alert('PDF导出成功！')
+  else if (r.error !== '已取消') alert('导出失败: ' + r.error)
 }
 
 onMounted(async () => {
-  // 优先使用 store 中的数据（编辑页填好后跳转过来）
   if (store.data.region && store.data.year === props.year && store.data.month === props.month) {
     report.value = JSON.parse(JSON.stringify(store.data))
   }
-  // 否则从数据库加载
   if (!report.value) {
-    const result = await ipcService.getReport(region.value, props.year, props.month)
-    if (result && !(result as any).error) {
-      report.value = result
-    }
+    const r = await ipcService.getReport(region.value, props.year, props.month)
+    if (r && !(r as any).error) report.value = r
   }
   allReports.value = (await ipcService.getAllReportsForChart()) || []
   loading.value = false
