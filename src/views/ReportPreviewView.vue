@@ -26,7 +26,7 @@
         <div style="font-size:12px;color:var(--color-text-secondary);margin-top:12px">生成日期: {{ today }}</div>
       </div>
 
-      <!-- KPIs -->
+      <!-- Module 1: KPIs -->
       <div class="card">
         <div class="card-header">一、核心指标</div>
         <div class="grid-3">
@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <!-- Channel leads -->
+      <!-- Module 2: Channel leads -->
       <div class="card" v-if="report.channel_leads?.length">
         <div class="card-header">二、线索渠道来源</div>
         <table class="data-table">
@@ -73,23 +73,92 @@
         />
       </div>
 
-      <!-- Deal sources -->
-      <div class="card" v-if="report.deal_sources?.length">
-        <div class="card-header">三、成交来源数据</div>
+      <!-- Module 3: Douyin -->
+      <div class="card" v-if="report.douyin_accounts?.length || report.douyin_ad_accounts?.length">
+        <div class="card-header">三、抖音精细数据</div>
+
+        <template v-if="report.douyin_accounts?.length">
+          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">各账号数据</h4>
+          <table class="data-table">
+            <thead><tr><th>账号名</th><th>更新视频数</th><th>自然流线索数</th></tr></thead>
+            <tbody>
+              <tr v-for="(a, i) in report.douyin_accounts" :key="i">
+                <td>{{ a.account_name }}</td>
+                <td>{{ a.videos_updated ?? 0 }}</td>
+                <td>{{ a.organic_leads ?? 0 }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+
+        <template v-if="report.douyin_ad_accounts?.length">
+          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">投流汇总</h4>
+          <table class="data-table">
+            <thead><tr><th>投流账号名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th></tr></thead>
+            <tbody>
+              <tr v-for="(ad, i) in report.douyin_ad_accounts" :key="i">
+                <td>{{ ad.account_name }}</td>
+                <td>{{ formatNumber(ad.ad_spend) }}</td>
+                <td>{{ formatNumber(ad.lead_count) }}</td>
+                <td>{{ formatNumber(ad.lead_cost) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+      </div>
+
+      <!-- Module 4: Xiaohongshu -->
+      <div class="card" v-if="report.xiaohongshu_accounts?.length || report.xiaohongshu_ad_accounts?.length">
+        <div class="card-header">四、小红书精细数据</div>
+
+        <template v-if="report.xiaohongshu_accounts?.length">
+          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">各账号数据</h4>
+          <table class="data-table">
+            <thead><tr><th>账号名</th><th>更新图文数</th><th>自然流线索数</th></tr></thead>
+            <tbody>
+              <tr v-for="(a, i) in report.xiaohongshu_accounts" :key="i">
+                <td>{{ a.account_name }}</td>
+                <td>{{ a.posts_updated ?? 0 }}</td>
+                <td>{{ a.organic_leads ?? 0 }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+
+        <template v-if="report.xiaohongshu_ad_accounts?.length">
+          <h4 style="margin:12px 0 8px;font-size:14px;color:var(--color-text-secondary)">投流汇总</h4>
+          <table class="data-table">
+            <thead><tr><th>投流账号名</th><th>消耗金额（元）</th><th>线索数</th><th>线索成本（元）</th></tr></thead>
+            <tbody>
+              <tr v-for="(ad, i) in report.xiaohongshu_ad_accounts" :key="i">
+                <td>{{ ad.account_name }}</td>
+                <td>{{ formatNumber(ad.ad_spend) }}</td>
+                <td>{{ formatNumber(ad.lead_count) }}</td>
+                <td>{{ formatNumber(ad.lead_cost) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+      </div>
+
+      <!-- Module 5: Other sources -->
+      <div class="card" v-if="report.other_sources?.length">
+        <div class="card-header">五、其他来源数据</div>
         <table class="data-table">
-          <thead><tr><th>来源</th><th>成交数</th><th>成交金额（元）</th><th>成交率</th></tr></thead>
+          <thead><tr><th>来源</th><th>线索数</th><th>线索成本（元）</th><th>成交数</th><th>成交率</th></tr></thead>
           <tbody>
-            <tr v-for="s in report.deal_sources" :key="s.source_name">
+            <tr v-for="(s, i) in report.other_sources" :key="i">
               <td>{{ s.source_name }}</td>
+              <td>{{ formatNumber(s.lead_count) }}</td>
+              <td>{{ formatNumber(s.lead_cost) }}</td>
               <td>{{ formatNumber(s.order_count) }}</td>
-              <td>{{ formatNumber(s.revenue) }}</td>
               <td>{{ s.conversion_rate ?? 0 }}%</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Trend chart (if multiple reports exist) -->
+      <!-- Trend chart -->
       <TrendChart :reports="allReports" title="历史趋势" v-if="allReports.length > 1" />
     </div>
   </div>

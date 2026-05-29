@@ -34,6 +34,7 @@ export async function initDatabase(): Promise<void> {
 
   db.run('PRAGMA foreign_keys = ON')
 
+  // ---- Reports main table ----
   db.run(`
     CREATE TABLE IF NOT EXISTS reports (
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +52,7 @@ export async function initDatabase(): Promise<void> {
     )
   `)
 
+  // ---- Module 2: Channel leads ----
   db.run(`
     CREATE TABLE IF NOT EXISTS channel_leads (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,19 +62,75 @@ export async function initDatabase(): Promise<void> {
     )
   `)
 
+  // ---- Module 3: Douyin organic accounts ----
   db.run(`
-    CREATE TABLE IF NOT EXISTS deal_sources (
+    CREATE TABLE IF NOT EXISTS douyin_accounts (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id      INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+      account_name   TEXT    NOT NULL,
+      videos_updated INTEGER NOT NULL DEFAULT 0,
+      organic_leads  INTEGER NOT NULL DEFAULT 0
+    )
+  `)
+
+  // ---- Module 3: Douyin ad accounts ----
+  db.run(`
+    CREATE TABLE IF NOT EXISTS douyin_ad_accounts (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id    INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+      account_name TEXT    NOT NULL,
+      ad_spend     REAL    NOT NULL DEFAULT 0,
+      lead_count   INTEGER NOT NULL DEFAULT 0,
+      lead_cost    REAL    NOT NULL DEFAULT 0
+    )
+  `)
+
+  // ---- Module 4: Xiaohongshu organic accounts ----
+  db.run(`
+    CREATE TABLE IF NOT EXISTS xiaohongshu_accounts (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id      INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+      account_name   TEXT    NOT NULL,
+      posts_updated  INTEGER NOT NULL DEFAULT 0,
+      organic_leads  INTEGER NOT NULL DEFAULT 0
+    )
+  `)
+
+  // ---- Module 4: Xiaohongshu ad accounts ----
+  db.run(`
+    CREATE TABLE IF NOT EXISTS xiaohongshu_ad_accounts (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id    INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+      account_name TEXT    NOT NULL,
+      ad_spend     REAL    NOT NULL DEFAULT 0,
+      lead_count   INTEGER NOT NULL DEFAULT 0,
+      lead_cost    REAL    NOT NULL DEFAULT 0
+    )
+  `)
+
+  // ---- Module 5: Other sources ----
+  db.run(`
+    CREATE TABLE IF NOT EXISTS other_sources (
       id              INTEGER PRIMARY KEY AUTOINCREMENT,
       report_id       INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
       source_name     TEXT    NOT NULL,
+      lead_count      INTEGER NOT NULL DEFAULT 0,
+      lead_cost       REAL    NOT NULL DEFAULT 0,
       order_count     INTEGER NOT NULL DEFAULT 0,
-      revenue         REAL    NOT NULL DEFAULT 0,
       conversion_rate REAL    NOT NULL DEFAULT 0
     )
   `)
 
+  // ---- Indexes ----
   db.run('CREATE INDEX IF NOT EXISTS idx_channel_leads_report ON channel_leads(report_id)')
-  db.run('CREATE INDEX IF NOT EXISTS idx_deal_sources_report ON deal_sources(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_douyin_accounts_report ON douyin_accounts(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_douyin_ad_accounts_report ON douyin_ad_accounts(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_xhs_accounts_report ON xiaohongshu_accounts(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_xhs_ad_accounts_report ON xiaohongshu_ad_accounts(report_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_other_sources_report ON other_sources(report_id)')
+
+  // ---- Migration: drop legacy tables if they exist ----
+  db.run('DROP TABLE IF EXISTS deal_sources')
 
   saveToDisk()
 }
