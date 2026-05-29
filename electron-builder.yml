@@ -1,0 +1,37 @@
+appId: com.leodate.app
+productName: 月度线索数据统计
+copyright: Copyright © 2025
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icon.ico
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 月度线索数据统计
+  installerLanguages: [zh_CN, en_US]
+
+mac:
+  target: [dmg]
+  icon: resources/icon.icns
+
+linux:
+  target: [AppImage, deb]
+  icon: resources/icon.png

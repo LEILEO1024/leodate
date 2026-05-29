@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -f \"node.*vite\")",
+      "Bash(pkill -f \"electron\")",
+      "Bash(rm -rf dist dist-electron)",
+      "Bash(npx vite *)",
+      "Bash(timeout 10 npx electron .)",
+      "Bash(echo \"Exit code: $?\")",
+      "Read(//d/Project/Data lexin/dist-electron/**)"
+    ]
+  }
+}
