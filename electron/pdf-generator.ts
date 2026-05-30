@@ -1,25 +1,58 @@
 import { BrowserWindow } from 'electron'
 import { writeFileSync } from 'fs'
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const esc = (s: string) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const n = (v: number) => (v || 0).toLocaleString()
 const pct = (v: number, total: number) => total > 0 ? (v / total * 100).toFixed(1) : '0.0'
 
+// 全局单例打印窗口，避免频繁 new / close 导致主进程内存卡顿
+let sharedPrintWindow: BrowserWindow | null = null
+
+function getPrintWindow(): BrowserWindow {
+  if (!sharedPrintWindow || sharedPrintWindow.isDestroyed()) {
+    sharedPrintWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    })
+  }
+  return sharedPrintWindow
+}
+
 export async function generatePdf(data: any, outputPath: string): Promise<void> {
-  const win = new BrowserWindow({ width: 800, height: 600, show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } })
+  const win = getPrintWindow()
   let done = false
+
+  // 等待页面加载完成（did-finish-load）
   const ready = new Promise<void>((resolve, reject) => {
     const go = () => { if (!done) { done = true; setTimeout(resolve, 200) } }
-    const t = setTimeout(go, 10000)
+    const t = setTimeout(go, 15000)
     win.webContents.once('did-finish-load', () => { clearTimeout(t); go() })
     win.webContents.once('did-fail-load', (_e, code, desc) => { clearTimeout(t); reject(new Error(`${desc} (${code})`)) })
   })
+
   try {
+    // Base64 data URL 方式加载 HTML（比 document.write 更稳定可靠）
     const html = Buffer.from(buildHtml(data), 'utf-8').toString('base64')
     await win.loadURL(`data:text/html;charset=utf-8;base64,${html}`)
     await ready
-    writeFileSync(outputPath, await win.webContents.printToPDF({ printBackground: true, landscape: false, pageSize: 'A4' }))
-  } finally { win.close() }
+
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true,
+      landscape: false,
+      pageSize: 'A4'
+    })
+
+    writeFileSync(outputPath, pdfBuffer)
+  } finally {
+    if (!win.isDestroyed()) {
+      await win.loadURL('about:blank').catch(() => {})
+    }
+  }
 }
 
 function groupBy(list: any[], key: string) {
@@ -47,10 +80,10 @@ function kpiCards(items: { label: string; value: string; color: string }[]) {
   return `<div class="kg">${cards}</div>`
 }
 
-function tbl(headers: string[], rows: string[][]) {
+function tbl(headers: string[], rows: string[][], className: string = '') {
   const h = headers.map(h => `<th>${h}</th>`).join('')
   const r = rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')
-  return `<table><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`
+  return `<table class="${className}"><thead><tr>${h}</tr></thead><tbody>${r}</tbody></table>`
 }
 
 function buildHtml(d: any): string {
@@ -108,35 +141,48 @@ function buildHtml(d: any): string {
 
   if ((d.order_entries || []).length) {
     html += section('六、订单明细',
-      tbl(['#', '订单创建时间', '订单内容', '订单状态', '订单创建人', '成交次数', '产品名称', '客户信息', '联系方式', '客户来源', '订单金额'],
+      tbl(['#', '订单创建时间', '订单内容', '订单状态', '订单创建人', '成交', '产品名称', '客户信息', '联系方式', '客户来源', '金额'],
         d.order_entries.map((o: any, i: number) => [
           String(i + 1), esc(o.order_time), esc(o.order_content), esc(o.order_status),
           esc(o.order_creator), esc(o.deal_count), esc(o.product_name), esc(o.customer_info),
           esc(o.contact_info), esc(o.customer_source), n(o.order_amount)
-        ])
-      ))
+        ]), 'detail-table'
+      )
+    )
   }
 
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Microsoft YaHei','SimHei',sans-serif;color:#2c3e50;font-size:11px;line-height:1.4;padding:10px 16px}
-.cover{text-align:center;padding:16px 0 10px;border-bottom:2px solid #2980b9;margin-bottom:10px}
-.cover h1{font-size:22px;color:#1e293b;margin-bottom:3px}
-.cover .sub{font-size:15px;color:#2980b9;font-weight:bold}
+body{font-family:'Microsoft YaHei','SimHei',sans-serif;color:#2c3e50;font-size:11px;line-height:1.4;padding:5px 10px}
+.cover{text-align:center;padding:10px 0 5px;border-bottom:2px solid #2980b9;margin-bottom:10px}
+.cover h1{font-size:20px;color:#1e293b;margin-bottom:3px}
+.cover .sub{font-size:14px;color:#2980b9;font-weight:bold}
 .sec{margin-bottom:10px}
-.st{font-size:15px;color:#1e293b;border-left:4px solid #2980b9;padding-left:8px;margin-bottom:6px;font-weight:bold}
+.st{font-size:14px;color:#1e293b;border-left:4px solid #2980b9;padding-left:8px;margin-bottom:6px;font-weight:bold}
 .kg{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px}
-.kpi{flex:0 0 calc(33.33% - 4px);background:#f8fafc;border-radius:4px;padding:8px 10px;border:1px solid #e2e8f0;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:44px}
+.kpi{flex:0 0 calc(33.33% - 4px);background:#f8fafc;border-radius:4px;padding:6px 8px;border:1px solid #e2e8f0;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:42px}
 .kl{font-size:10px;color:#64748b;margin-bottom:2px}
-.kv{font-size:16px;font-weight:bold;color:#1e293b;line-height:1.2}
+.kv{font-size:14px;font-weight:bold;color:#1e293b;line-height:1.2;text-align:center}
 .blue{border-top:3px solid #2980b9}.green{border-top:3px solid #27ae60}
 .orange{border-top:3px solid #e67e22}.purple{border-top:3px solid #8e44ad}
 .red{border-top:3px solid #c0392b}.teal{border-top:3px solid #16a085}
-table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:10px}
-th{background:#2980b9;color:#fff;padding:3px 6px;text-align:center;font-weight:bold}
-td{padding:3px 6px;text-align:center;border-bottom:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:10px;table-layout:fixed}
+th{background:#2980b9;color:#fff;padding:4px 5px;text-align:center;font-weight:bold}
+td{padding:4px 5px;text-align:center;border-bottom:1px solid #e2e8f0;word-break:break-all}
 tr:nth-child(even) td{background:#f8fafc}
-.sub-t{font-size:12px;font-weight:bold;color:#1e293b;margin:6px 0 3px;padding-left:5px;border-left:3px solid #bdc3c7}
-@media print{.sec{page-break-inside:avoid}table{page-break-inside:avoid}tr{page-break-inside:avoid}}
+.sub-t{font-size:11px;font-weight:bold;color:#1e293b;margin:5px 0 3px;padding-left:5px;border-left:3px solid #bdc3c7}
+
+.detail-table { font-size: 8.5px; }
+.detail-table th, .detail-table td { padding: 3px 2px; text-align: left; }
+.detail-table th:nth-child(1), .detail-table td:nth-child(1) { width: 4%; text-align: center; }
+.detail-table th:nth-child(2), .detail-table td:nth-child(2) { width: 11%; }
+
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sec { page-break-inside: auto; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid !important; }
+  thead { display: table-header-group; }
+}
 </style></head><body>${html}</body></html>`
 }

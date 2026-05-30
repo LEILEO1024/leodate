@@ -3,10 +3,13 @@
 ## 技术栈
 - **桌面框架**: Electron 33（跨平台 Win/Mac/Linux）
 - **前端**: Vue 3 + TypeScript + Vite 6
+- **构建工具**: electron-vite ^5.0（三段式构建：main / preload / renderer）
 - **状态管理**: Pinia
 - **路由**: Vue Router 4（Hash 模式）
-- **数据库**: sql.js（SQLite WASM 实现，无需原生编译）
+- **数据库**: better-sqlite3（原生 SQLite，同步 API，自动持久化）
 - **图表**: Chart.js 4
+- **Excel**: xlsx（主进程解析）
+- **PDF**: Electron printToPDF
 - **打包**: electron-builder（NSIS 安装包 + 便携版）
 - **样式**: 纯 CSS Variables，无第三方 UI 库
 

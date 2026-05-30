@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron'
-import { queryAll, queryOne, execute, saveToDisk } from './database'
+import { queryAll, queryOne, execute } from './database'
 
 function buildReportData(reportRow: any): any {
   const reportId = reportRow.id
@@ -50,9 +50,9 @@ export function registerIpcHandlers() {
           [total_leads, total_orders, online_revenue, offline_revenue, total_ad_spend, reportId])
         deleteChildRecords(reportId)
       } else {
-        execute('INSERT INTO reports (region,year,month,total_leads,total_orders,online_revenue,offline_revenue,total_ad_spend) VALUES (?,?,?,?,?,?,?,?)',
+        const res = execute('INSERT INTO reports (region,year,month,total_leads,total_orders,online_revenue,offline_revenue,total_ad_spend) VALUES (?,?,?,?,?,?,?,?)',
           [region || '', year, month, total_leads, total_orders, online_revenue, offline_revenue, total_ad_spend])
-        reportId = (queryOne('SELECT last_insert_rowid() as id') as any).id
+        reportId = res.lastInsertRowid
       }
 
       for (const a of (data.organic_accounts || []))
@@ -75,7 +75,6 @@ export function registerIpcHandlers() {
         execute('INSERT INTO channel_leads (report_id,channel_name,lead_count) VALUES (?,?,?)',
           [reportId, c.channel_name, c.lead_count || 0])
 
-      saveToDisk()
       return { success: true }
     } catch (e: any) { return { success: false, error: e.message } }
   })
@@ -86,7 +85,6 @@ export function registerIpcHandlers() {
       if (!r) return { success: false, error: '未找到报告' }
       deleteChildRecords(r.id)
       execute('DELETE FROM reports WHERE id=?', [r.id])
-      saveToDisk()
       return { success: true }
     } catch (e: any) { return { success: false, error: e.message } }
   })

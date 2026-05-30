@@ -2,18 +2,19 @@
   "name": "leodate",
   "version": "1.3.0",
   "description": "月度线索数据统计软件",
-  "main": "dist-electron/main.js",
+  "main": "./out/main/main.js",
   "scripts": {
-    "dev": "cross-env ELECTRON_RUN_AS_NODE= vite",
-    "build": "cross-env ELECTRON_RUN_AS_NODE= vue-tsc --noEmit && vite build && electron-builder",
-    "build:win": "cross-env ELECTRON_RUN_AS_NODE= vite build && electron-builder --win",
+    "dev": "electron-vite dev",
+    "dev:web": "vite",
+    "build": "electron-vite build",
+    "build:win": "electron-vite build && electron-builder --win",
     "preview": "vite preview"
   },
   "dependencies": {
+    "better-sqlite3": "^12.10.0",
     "chart.js": "^4.4.7",
     "docx": "^9.7.1",
     "pinia": "^2.3.0",
-    "sql.js": "^1.12.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "xlsx": "^0.18.5"
@@ -23,10 +24,9 @@
     "cross-env": "^10.1.0",
     "electron": "^33.4.0",
     "electron-builder": "^25.1.8",
+    "electron-vite": "^5.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
-    "vite-plugin-electron": "^0.28.8",
-    "vite-plugin-electron-renderer": "^0.14.6",
     "vue-tsc": "^2.2.0"
   }
 }

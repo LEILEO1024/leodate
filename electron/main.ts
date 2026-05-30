@@ -14,16 +14,16 @@ function createWindow() {
     frame: false,
     title: '月度线索数据统计',
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   })
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+  if (process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    mainWindow.loadFile(join(__dirname, '../dist/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
   mainWindow.on('closed', () => {
@@ -42,8 +42,8 @@ function createWindow() {
   ipcMain.on('window:close', () => mainWindow?.close())
 }
 
-app.whenReady().then(async () => {
-  await initDatabase()
+app.whenReady().then(() => {
+  initDatabase()
   registerIpcHandlers()
   createWindow()
 

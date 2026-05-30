@@ -1,46 +1,16 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import electron from 'vite-plugin-electron'
-import electronRenderer from 'vite-plugin-electron-renderer'
-import { resolve, join } from 'path'
+import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    electron([
-      {
-        entry: 'electron/main.ts',
-        vite: {
-          build: {
-            outDir: 'dist-electron',
-            rollupOptions: {
-              external: ['sql.js'],
-              output: {
-                intro: 'if(typeof process!="undefined"&&process.env&&process.env.ELECTRON_RUN_AS_NODE){delete process.env.ELECTRON_RUN_AS_NODE}'
-              }
-            }
-          }
-        }
-      },
-      {
-        entry: 'electron/preload.ts',
-        onstart(args) {
-          args.reload()
-        },
-        vite: {
-          build: {
-            outDir: 'dist-electron'
-          }
-        }
-      }
-    ], {
-      electronPath: join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe')
-    }),
-    electronRenderer()
-  ],
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
     }
-  }
+  },
+  server: {
+    port: 1420,
+    strictPort: true,
+  },
 })
