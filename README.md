@@ -2,6 +2,12 @@
 
 一个基于 Electron + Vue 3 的桌面应用，用于月度线索数据录入、统计、分析与报告导出。
 
+## 下载
+
+[📥 下载安装包 (v1.4.0)](https://github.com/LEILEO1024/leodate/releases/download/v1.4.0/%E6%9C%88%E5%BA%A6%E7%BA%BF%E7%B4%A2%E6%95%B0%E6%8D%AE%E7%BB%9F%E8%AE%A1_Setup_1.3.0.exe)
+
+[📦 下载便携版 (v1.4.0, ZIP)](https://github.com/LEILEO1024/leodate/releases/download/v1.4.0/%E6%9C%88%E5%BA%A6%E7%BA%BF%E7%B4%A2%E6%95%B0%E6%8D%AE%E7%BB%9F%E8%AE%A1_Portable_1.4.0.zip)
+
 ## 功能
 
 - **4 步数据录入**：账号运营情况 → 投流情况 → 其他渠道 → 订单数据
