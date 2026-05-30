@@ -79,14 +79,8 @@ LeoDate/
 - `electron-builder.yml` 中 `signAndEditExecutable: false`（无代码签名证书）
 - 输出：`release/月度线索数据统计 Setup x.x.x.exe`（安装包）+ `release/win-unpacked/`（便携版）
 
-### 环境注意事项
-- Windows 用户环境变量中**不能有** `ELECTRON_RUN_AS_NODE=1`，否则 Electron 降级为纯 Node.js
-- 开发脚本已通过 `cross-env` 覆盖此变量作为兜底
-- 打包后的 exe 不受此影响
-
 ## 常用命令
 ```bash
-npm run dev          # 开发模式（Vite + Electron 热更新）
+npm run dev          # 开发模式（Electron + Vite 热更新）
 npm run build:win    # 构建 + 打包 Windows 安装包
-npx electron .       # 直接用 Electron 运行构建产物（需确保 dist 已构建）
 ```
